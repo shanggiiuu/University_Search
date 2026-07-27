@@ -1,13 +1,16 @@
 :root {
-    --bg-primary: #141414;
-    --bg-secondary: #1a1a1a;
-    --bg-card: #222;
-    --bg-hover: #2a2a2a;
-    --text-primary: #e5e5e5;
-    --text-secondary: #999;
-    --accent: #e50914;
-    --accent-hover: #f40612;
-    --gold: #f5c518;
+    --blue: #3d6fe0;
+    --blue-dark: #2a4fb0;
+    --blue-darker: #1c3785;
+    --paper: #fffdf6;
+    --paper-line: #cfe0ff;
+    --yellow: #ffc93c;
+    --yellow-dark: #f0a83c;
+    --pink: #ff7fb0;
+    --pink-dark: #ef5f9a;
+    --text-dark: #223361;
+    --text-muted: #6d7ba3;
+    --gold: #f5b83c;
 }
 
 * {
@@ -17,35 +20,45 @@
 }
 
 body {
-    background: var(--bg-primary);
-    color: var(--text-primary);
-    font-family: 'Helvetica Neue', Arial, sans-serif;
+    background:
+        radial-gradient(circle at 15% 10%, rgba(255, 255, 255, 0.12) 0%, transparent 40%),
+        linear-gradient(180deg, var(--blue) 0%, var(--blue-dark) 100%);
+    background-attachment: fixed;
+    color: var(--text-dark);
+    font-family: 'Nunito', 'Helvetica Neue', Arial, sans-serif;
     min-height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6,
+.navbar-brand, .auth-brand, .section-title, .chat-header h5 {
+    font-family: 'Baloo 2', 'Nunito', sans-serif;
 }
 
 /* Navbar */
 .navbar {
-    background: rgba(20, 20, 20, 0.95);
-    backdrop-filter: blur(10px);
-    padding: 0.6rem 1.5rem;
-    border-bottom: 1px solid #333;
+    background: var(--paper);
+    padding: 0.7rem 1.5rem;
+    border-bottom: 4px dashed var(--paper-line);
+    box-shadow: 0 4px 14px rgba(20, 40, 90, 0.25);
 }
 
 .navbar-brand {
-    font-size: 1.6rem;
+    font-size: 1.7rem;
     font-weight: 700;
-    color: var(--accent) !important;
+    color: var(--blue) !important;
     letter-spacing: -0.5px;
 }
 
 .navbar-brand i {
     margin-right: 0.3rem;
+    color: var(--pink);
 }
 
 .nav-btn {
-    background: none;
-    border: 1px solid #444;
-    color: var(--text-primary);
+    background: #eef3ff;
+    border: 2px solid var(--paper-line);
+    color: var(--text-dark);
+    font-weight: 700;
     padding: 0.4rem 1rem;
     border-radius: 20px;
     cursor: pointer;
@@ -55,35 +68,36 @@ body {
 
 .nav-btn:hover,
 .nav-btn.active {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: white;
+    background: var(--yellow);
+    border-color: var(--yellow-dark);
+    color: var(--text-dark);
+    transform: translateY(-2px);
 }
 
 /* Search */
 .search-section {
-    background: linear-gradient(180deg, rgba(20,20,20,0.8) 0%, var(--bg-primary) 100%);
     padding: 2rem 0 1rem;
 }
 
 .search-bar .form-control {
-    background: var(--bg-secondary);
-    border: 1px solid #444;
-    color: var(--text-primary);
+    background: var(--paper);
+    border: 3px dashed var(--paper-line);
+    color: var(--text-dark);
     padding: 0.8rem 1.2rem;
     font-size: 1rem;
+    font-weight: 600;
     border-radius: 25px 0 0 25px;
 }
 
 .search-bar .form-control:focus {
-    background: var(--bg-card);
-    border-color: var(--accent);
-    box-shadow: 0 0 0 0.2rem rgba(229, 9, 20, 0.25);
-    color: var(--text-primary);
+    background: var(--paper);
+    border-color: var(--pink);
+    box-shadow: 0 0 0 0.2rem rgba(255, 127, 176, 0.25);
+    color: var(--text-dark);
 }
 
 .search-bar .form-control::placeholder {
-    color: var(--text-secondary);
+    color: var(--text-muted);
 }
 
 .search-bar .btn {
@@ -93,34 +107,61 @@ body {
 
 /* Section Titles */
 .section-title {
-    color: var(--text-primary);
-    font-weight: 600;
+    color: var(--paper);
+    font-weight: 700;
     margin-bottom: 1.2rem;
-    font-size: 1.3rem;
+    font-size: 1.4rem;
+    text-shadow: 0 2px 0 rgba(20, 40, 90, 0.35);
 }
 
-/* Movie Grid */
-.movie-grid {
+/* University Grid */
+.university-grid, .movie-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 1.2rem;
+    gap: 1.6rem;
     padding-bottom: 2rem;
 }
 
-/* Movie Card */
+/* University Card (sticky note) */
 .movie-card {
-    background: var(--bg-card);
-    border-radius: 8px;
+    background: var(--paper);
+    border-radius: 12px;
     overflow: hidden;
     cursor: pointer;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 2px solid rgba(61, 111, 224, 0.15);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
     position: relative;
+    box-shadow: 0 6px 14px rgba(20, 40, 90, 0.25);
+    transform: rotate(-1deg);
+}
+
+.movie-card:nth-child(even) {
+    transform: rotate(1deg);
+}
+
+.movie-card::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 26px;
+    height: 14px;
+    background: var(--pink);
+    border-radius: 3px;
+    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.25);
+    z-index: 2;
+}
+
+.movie-card:nth-child(3n)::before {
+    background: var(--yellow);
 }
 
 .movie-card:hover {
-    transform: scale(1.05);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+    transform: rotate(0deg) translateY(-6px) scale(1.04);
+    box-shadow: 0 14px 28px rgba(20, 40, 90, 0.4);
     z-index: 2;
+    border-color: var(--pink);
 }
 
 .movie-card .poster {
@@ -132,12 +173,13 @@ body {
 
 .movie-card .card-body {
     padding: 0.6rem 0.8rem;
+    background: var(--paper);
 }
 
 .movie-card .card-title {
     font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--text-primary);
+    font-weight: 700;
+    color: var(--text-dark);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -153,7 +195,7 @@ body {
 
 .rating-badge {
     color: var(--gold);
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .rating-badge i {
@@ -163,7 +205,7 @@ body {
 .fav-btn {
     background: none;
     border: none;
-    color: #666;
+    color: #b9c4e8;
     font-size: 1.1rem;
     cursor: pointer;
     padding: 0.2rem;
@@ -173,26 +215,26 @@ body {
 
 .fav-btn:hover,
 .fav-btn.active {
-    color: var(--accent);
+    color: var(--pink);
     transform: scale(1.2);
 }
 
 .no-poster {
     width: 100%;
     aspect-ratio: 2/3;
-    background: #333;
+    background: repeating-linear-gradient(135deg, #eef3ff, #eef3ff 10px, #e3ecff 10px, #e3ecff 20px);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #666;
+    color: var(--blue);
     font-size: 2.5rem;
 }
 
 /* Movie Detail Modal */
 .modal-content {
-    background: var(--bg-secondary);
-    border: 1px solid #333;
-    border-radius: 12px;
+    background: var(--paper);
+    border: 3px dashed var(--paper-line);
+    border-radius: 18px;
     overflow: hidden;
 }
 
@@ -201,53 +243,56 @@ body {
     top: 1rem;
     right: 1rem;
     z-index: 10;
-    opacity: 0.8;
+    opacity: 1;
+    filter: invert(1) grayscale(1);
 }
 
-.movie-detail {
+.university-detail {
     display: flex;
     min-height: 400px;
 }
 
-.movie-detail-poster {
+.university-detail-poster {
     flex: 0 0 300px;
 }
 
-.movie-detail-poster img {
+.university-detail-poster img {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
 
-.movie-detail-info {
+.university-detail-info {
     flex: 1;
     padding: 2rem;
     display: flex;
     flex-direction: column;
     gap: 1rem;
+    color: var(--text-dark);
 }
 
-.movie-detail-info h2 {
+.university-detail-info h2 {
     font-size: 1.8rem;
     font-weight: 700;
+    color: var(--blue-dark);
 }
 
-.movie-meta {
+.university-meta {
     display: flex;
     align-items: center;
     gap: 1rem;
     font-size: 1rem;
 }
 
-.movie-meta .rating-badge {
+.university-meta .rating-badge {
     font-size: 1.1rem;
-    background: rgba(245, 197, 24, 0.15);
+    background: rgba(245, 184, 60, 0.18);
     padding: 0.3rem 0.7rem;
     border-radius: 6px;
 }
 
-.movie-overview {
-    color: var(--text-secondary);
+.university-overview {
+    color: var(--text-muted);
     line-height: 1.6;
     flex: 1;
     overflow-y: auto;
@@ -261,13 +306,13 @@ body {
     right: -400px;
     width: 380px;
     height: 100vh;
-    background: var(--bg-secondary);
-    border-left: 1px solid #333;
+    background: var(--paper);
+    border-left: 4px dashed var(--paper-line);
     display: flex;
     flex-direction: column;
     transition: right 0.3s ease;
     z-index: 1050;
-    box-shadow: -5px 0 20px rgba(0, 0, 0, 0.3);
+    box-shadow: -5px 0 25px rgba(20, 40, 90, 0.35);
 }
 
 .chat-sidebar.open {
@@ -279,13 +324,18 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 1rem 1.2rem;
-    border-bottom: 1px solid #333;
-    background: var(--bg-card);
+    border-bottom: 3px dashed var(--paper-line);
+    background: var(--yellow);
 }
 
 .chat-header h5 {
     margin: 0;
-    font-size: 1rem;
+    font-size: 1.05rem;
+    color: var(--text-dark);
+}
+
+.chat-header .btn-close {
+    filter: none;
 }
 
 .chat-messages {
@@ -295,28 +345,32 @@ body {
     display: flex;
     flex-direction: column;
     gap: 0.8rem;
+    background:
+        linear-gradient(180deg, transparent 0 31px, var(--paper-line) 31px, var(--paper-line) 32px);
+    background-size: 100% 32px;
 }
 
 .chat-msg {
     max-width: 85%;
     padding: 0.7rem 1rem;
-    border-radius: 12px;
+    border-radius: 14px;
     font-size: 0.9rem;
     line-height: 1.5;
 }
 
 .chat-msg.user {
-    background: var(--accent);
+    background: var(--blue);
     color: white;
     align-self: flex-end;
     border-bottom-right-radius: 4px;
 }
 
 .chat-msg.bot {
-    background: var(--bg-card);
-    color: var(--text-primary);
+    background: #eef3ff;
+    color: var(--text-dark);
     align-self: flex-start;
     border-bottom-left-radius: 4px;
+    border: 1px solid var(--paper-line);
 }
 
 .chat-msg.bot p {
@@ -326,22 +380,22 @@ body {
 
 .chat-input {
     padding: 0.8rem;
-    border-top: 1px solid #333;
-    background: var(--bg-card);
+    border-top: 3px dashed var(--paper-line);
+    background: var(--paper);
 }
 
 .chat-input .form-control {
-    background: var(--bg-primary);
-    border: 1px solid #444;
-    color: var(--text-primary);
+    background: #eef3ff;
+    border: 2px solid var(--paper-line);
+    color: var(--text-dark);
     border-radius: 20px 0 0 20px;
 }
 
 .chat-input .form-control:focus {
-    background: var(--bg-secondary);
-    border-color: var(--accent);
+    background: white;
+    border-color: var(--pink);
     box-shadow: none;
-    color: var(--text-primary);
+    color: var(--text-dark);
 }
 
 .chat-input .btn {
@@ -355,7 +409,7 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(28, 55, 133, 0.55);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -364,16 +418,16 @@ body {
 
 /* Responsive */
 @media (max-width: 768px) {
-    .movie-grid {
+    .university-grid, .movie-grid {
         grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-        gap: 0.8rem;
+        gap: 1rem;
     }
 
-    .movie-detail {
+    .university-detail {
         flex-direction: column;
     }
 
-    .movie-detail-poster {
+    .university-detail-poster {
         flex: 0 0 auto;
         max-height: 300px;
     }
@@ -391,20 +445,20 @@ body {
 
 /* Scrollbar */
 ::-webkit-scrollbar {
-    width: 6px;
+    width: 8px;
 }
 
 ::-webkit-scrollbar-track {
-    background: var(--bg-primary);
+    background: var(--blue-dark);
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #444;
-    border-radius: 3px;
+    background: var(--yellow);
+    border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #555;
+    background: var(--pink);
 }
 
 /* Auth overlay (login / register) */
@@ -415,71 +469,91 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #000 0%, #141414 100%);
+    background:
+        radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.15), transparent 45%),
+        linear-gradient(135deg, var(--blue) 0%, var(--blue-darker) 100%);
     padding: 1rem;
 }
 
 .auth-card {
     width: 100%;
     max-width: 380px;
-    background: var(--bg-secondary);
-    border: 1px solid #333;
-    border-radius: 10px;
+    background: var(--paper);
+    border: 3px dashed var(--paper-line);
+    border-radius: 16px;
     padding: 2.2rem 2rem;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+    box-shadow: 0 16px 45px rgba(10, 20, 60, 0.5);
+    position: relative;
+    transform: rotate(-0.6deg);
+}
+
+.auth-card::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%) rotate(-4deg);
+    width: 60px;
+    height: 22px;
+    background: var(--pink);
+    border-radius: 4px;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
 }
 
 .auth-brand {
-    font-size: 1.9rem;
+    font-size: 2rem;
     font-weight: 700;
-    color: var(--accent);
+    color: var(--blue);
     text-align: center;
     letter-spacing: -0.5px;
 }
 
 .auth-subtitle {
     text-align: center;
-    color: var(--text-secondary);
+    color: var(--text-muted);
     margin: 0.4rem 0 1.6rem;
     font-size: 0.95rem;
+    font-weight: 600;
 }
 
 .auth-card .form-control {
-    background: var(--bg-card);
-    border: 1px solid #333;
-    color: var(--text-primary);
+    background: #eef3ff;
+    border: 2px solid var(--paper-line);
+    color: var(--text-dark);
     padding: 0.7rem 0.9rem;
+    border-radius: 10px;
 }
 
 .auth-card .form-control:focus {
-    background: var(--bg-card);
-    color: var(--text-primary);
-    border-color: var(--accent);
-    box-shadow: none;
+    background: white;
+    color: var(--text-dark);
+    border-color: var(--pink);
+    box-shadow: 0 0 0 0.15rem rgba(255, 127, 176, 0.25);
 }
 
 .auth-error {
-    background: rgba(229, 9, 20, 0.15);
-    border: 1px solid var(--accent);
-    color: #ff6b6b;
-    border-radius: 6px;
+    background: rgba(239, 95, 154, 0.15);
+    border: 2px solid var(--pink);
+    color: var(--pink-dark);
+    border-radius: 8px;
     padding: 0.6rem 0.8rem;
     margin-bottom: 1rem;
     font-size: 0.9rem;
+    font-weight: 700;
     text-align: center;
 }
 
 .auth-toggle {
     text-align: center;
-    color: var(--text-secondary);
+    color: var(--text-muted);
     font-size: 0.9rem;
     margin: 0.6rem 0 0;
 }
 
 .auth-toggle a {
-    color: var(--accent);
+    color: var(--blue);
     text-decoration: none;
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .auth-toggle a:hover {
@@ -491,10 +565,11 @@ body {
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    color: var(--text-primary);
+    color: var(--text-dark);
+    font-weight: 700;
     font-size: 0.95rem;
     padding-left: 0.6rem;
-    border-left: 1px solid #333;
+    border-left: 2px dashed var(--paper-line);
 }
 
 /* Chat "save for later" recommendations */
@@ -510,43 +585,69 @@ body {
     align-items: center;
     justify-content: space-between;
     gap: 0.6rem;
-    background: var(--bg-card);
-    border: 1px solid #333;
-    border-radius: 8px;
+    background: white;
+    border: 2px solid var(--paper-line);
+    border-radius: 10px;
     padding: 0.55rem 0.7rem;
 }
 
 .chat-rec-title {
     font-size: 0.9rem;
-    color: var(--text-primary);
+    color: var(--text-dark);
     line-height: 1.2;
+    font-weight: 600;
 }
 
 .chat-rec-btn {
     flex-shrink: 0;
     background: transparent;
-    border: 1px solid var(--accent);
-    color: var(--accent);
-    border-radius: 6px;
+    border: 2px solid var(--blue);
+    color: var(--blue);
+    border-radius: 8px;
     padding: 0.3rem 0.6rem;
     font-size: 0.8rem;
+    font-weight: 700;
     white-space: nowrap;
     cursor: pointer;
     transition: background 0.15s, color 0.15s;
 }
 
 .chat-rec-btn:hover {
-    background: var(--accent);
+    background: var(--blue);
     color: #fff;
 }
 
 .chat-rec-btn.saved {
-    border-color: #2e7d32;
-    color: #4caf50;
+    border-color: #2e9e4f;
+    color: #2e9e4f;
     cursor: default;
 }
 
 .chat-rec-btn.saved:hover {
     background: transparent;
-    color: #4caf50;
+    color: #2e9e4f;
+}
+
+/* Bootstrap accent override -> pink/blue instead of red */
+.btn-danger {
+    --bs-btn-bg: var(--pink);
+    --bs-btn-border-color: var(--pink-dark);
+    --bs-btn-hover-bg: var(--pink-dark);
+    --bs-btn-hover-border-color: var(--pink-dark);
+    --bs-btn-active-bg: var(--pink-dark);
+    --bs-btn-active-border-color: var(--pink-dark);
+    --bs-btn-focus-shadow-rgb: 255, 127, 176;
+    font-weight: 700;
+}
+
+.text-danger {
+    color: var(--pink) !important;
+}
+
+.bg-danger {
+    background-color: var(--pink) !important;
+}
+
+.spinner-border.text-danger {
+    color: var(--yellow) !important;
 }

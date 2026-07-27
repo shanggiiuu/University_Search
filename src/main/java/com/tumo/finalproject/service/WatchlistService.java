@@ -1,6 +1,6 @@
 package com.tumo.finalproject.service;
 
-import com.tumo.finalproject.model.Movie;
+import com.tumo.finalproject.model.University;
 import com.tumo.finalproject.model.WatchlistItem;
 import com.tumo.finalproject.repository.WatchlistRepository;
 import org.springframework.stereotype.Service;
@@ -31,7 +31,7 @@ public class WatchlistService {
      * Load {@code watchlistRepository.findByUsername(username)}, convert each row
      * with {@link #toMovie(WatchlistItem)}, and return the list.
      */
-    public List<Movie> getWatchlist(String username) {
+    public List<University> getWatchlist(String username) {
         // TODO: load this user's rows and convert each to a Movie.
         throw new UnsupportedOperationException("WatchlistService.getWatchlist not implemented");
     }
@@ -44,7 +44,7 @@ public class WatchlistService {
      * {@code existsByUsernameAndTmdbId(username, movie.getId())} is already true,
      * then return {@code movie}. Adding the same movie twice must not fail.
      */
-    public Movie addToWatchlist(String username, Movie movie) {
+    public University addToWatchlist(String username, University university) {
         // TODO: save the movie for this user unless it is already saved, then return it.
         throw new UnsupportedOperationException("WatchlistService.addToWatchlist not implemented");
     }
@@ -72,7 +72,7 @@ public class WatchlistService {
      * Build a {@code new Movie(...)} from the entity, passing {@code w.getTmdbId()}
      * as the Movie's id — not {@code w.getId()}.
      */
-    private Movie toMovie(WatchlistItem w) {
+    private University toMovie(WatchlistItem w) {
         // TODO: convert the entity into a Movie (use getTmdbId() as the Movie id).
         throw new UnsupportedOperationException("WatchlistService.toMovie not implemented");
     }
@@ -84,7 +84,7 @@ public class WatchlistService {
      * Return a {@code new WatchlistItem(username, m.getId(), ...)} with all seven
      * constructor arguments filled in.
      */
-    private WatchlistItem toEntity(String username, Movie m) {
+    private WatchlistItem toEntity(String username, University m) {
         // TODO: convert the Movie into a WatchlistItem owned by this username.
         throw new UnsupportedOperationException("WatchlistService.toEntity not implemented");
     }

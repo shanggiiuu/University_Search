@@ -1,6 +1,6 @@
 package com.tumo.finalproject.controller;
 
-import com.tumo.finalproject.model.Movie;
+import com.tumo.finalproject.model.University;
 import com.tumo.finalproject.service.MovieChatService;
 import com.tumo.finalproject.service.TmdbService;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +19,7 @@ import java.util.Map;
  * <i>titles</i> — plain text, no poster, no TMDB id, so nothing the user could save.
  * TMDB has all of that but cannot hold a conversation. So this controller asks the
  * model what to recommend, then looks each title up on TMDB to get a real, saveable
- * {@link Movie}.
+ * {@link University}.
  *
  * <p>Leave this one until {@link MovieChatService} and {@link TmdbService} both work.
  *

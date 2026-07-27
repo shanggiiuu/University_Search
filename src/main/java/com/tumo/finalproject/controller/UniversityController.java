@@ -1,6 +1,6 @@
 package com.tumo.finalproject.controller;
 
-import com.tumo.finalproject.model.Movie;
+import com.tumo.finalproject.model.University;
 import com.tumo.finalproject.service.FavoritesService;
 import com.tumo.finalproject.service.TmdbService;
 import com.tumo.finalproject.service.WatchlistService;
@@ -65,7 +65,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/movies")
-public class MovieController {
+public class UniversityController {
 
     private final TmdbService tmdbService;
     private final FavoritesService favoritesService;
@@ -76,8 +76,8 @@ public class MovieController {
      * {@code @Service}. This is <b>constructor injection</b>, and the fields are
      * {@code final} so they can never be reassigned or left null.
      */
-    public MovieController(TmdbService tmdbService, FavoritesService favoritesService,
-                           WatchlistService watchlistService) {
+    public UniversityController(TmdbService tmdbService, FavoritesService favoritesService,
+                                WatchlistService watchlistService) {
         this.tmdbService = tmdbService;
         this.favoritesService = favoritesService;
         this.watchlistService = watchlistService;
@@ -100,7 +100,7 @@ public class MovieController {
      * saving is not.
      */
     @GetMapping("/search")
-    public ResponseEntity<List<Movie>> searchMovies(@RequestParam String query) {
+    public ResponseEntity<List<University>> searchMovies(@RequestParam String query) {
         // TODO: validate the query, then return the search results.
         throw new UnsupportedOperationException("MovieController.searchMovies not implemented");
     }
@@ -114,7 +114,7 @@ public class MovieController {
      * {@code ResponseEntity.ok(favoritesService.getFavorites(username))}.
      */
     @GetMapping("/favorites")
-    public ResponseEntity<List<Movie>> getFavorites(HttpSession session) {
+    public ResponseEntity<List<University>> getFavorites(HttpSession session) {
         // TODO: require a logged-in user, then return their favorites.
         throw new UnsupportedOperationException("MovieController.getFavorites not implemented");
     }
@@ -124,7 +124,7 @@ public class MovieController {
      *
      * <p>{@code @RequestBody Movie movie} is where Jackson turns the JSON the browser
      * sent into a real {@code Movie} object. If your {@code @JsonProperty}
-     * annotations in {@link Movie} are missing, the snake_case fields silently arrive
+     * annotations in {@link University} are missing, the snake_case fields silently arrive
      * as null and your favorites end up with no poster.
      *
      * <h2>TODO — implement</h2>
@@ -132,7 +132,7 @@ public class MovieController {
      * {@code ResponseEntity.ok(favoritesService.addFavorite(username, movie))}.
      */
     @PostMapping("/favorites")
-    public ResponseEntity<Movie> addFavorite(@RequestBody Movie movie, HttpSession session) {
+    public ResponseEntity<University> addFavorite(@RequestBody University university, HttpSession session) {
         // TODO: require a logged-in user, then save the movie for them.
         throw new UnsupportedOperationException("MovieController.addFavorite not implemented");
     }
@@ -165,7 +165,7 @@ public class MovieController {
      * Same as {@link #getFavorites(HttpSession)}, but using {@code watchlistService}.
      */
     @GetMapping("/watchlist")
-    public ResponseEntity<List<Movie>> getWatchlist(HttpSession session) {
+    public ResponseEntity<List<University>> getWatchlist(HttpSession session) {
         // TODO: require a logged-in user, then return their watchlist.
         throw new UnsupportedOperationException("MovieController.getWatchlist not implemented");
     }
@@ -174,11 +174,11 @@ public class MovieController {
      * {@code POST /api/movies/watchlist} — save a movie for later.
      *
      * <h2>TODO — implement</h2>
-     * Same as {@link #addFavorite(Movie, HttpSession)}, calling
+     * Same as {@link #addFavorite(University, HttpSession)}, calling
      * {@code watchlistService.addToWatchlist(username, movie)}.
      */
     @PostMapping("/watchlist")
-    public ResponseEntity<Movie> addToWatchlist(@RequestBody Movie movie, HttpSession session) {
+    public ResponseEntity<University> addToWatchlist(@RequestBody University university, HttpSession session) {
         // TODO: require a logged-in user, then add the movie to their watchlist.
         throw new UnsupportedOperationException("MovieController.addToWatchlist not implemented");
     }

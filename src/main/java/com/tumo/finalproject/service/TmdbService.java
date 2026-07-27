@@ -1,6 +1,6 @@
 package com.tumo.finalproject.service;
 
-import com.tumo.finalproject.model.Movie;
+import com.tumo.finalproject.model.University;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -92,7 +92,7 @@ public class TmdbService {
      *
      * @param query what the user typed, e.g. "batman"
      */
-    public List<Movie> searchMovies(String query) {
+    public List<University> searchMovies(String query) {
         // TODO: call TMDB /search/movie, then return parseMovies(response).
         throw new UnsupportedOperationException("TmdbService.searchMovies not implemented");
     }
@@ -108,13 +108,13 @@ public class TmdbService {
      * list is empty. Never call {@code get(0)} without checking first, or you get
      * an {@code IndexOutOfBoundsException}.
      */
-    public Movie searchOne(String title) {
+    public University searchOne(String title) {
         // TODO: search for the title and return the first result, or null.
         throw new UnsupportedOperationException("TmdbService.searchOne not implemented");
     }
 
     /**
-     * Converts TMDB's raw JSON into a list of {@link Movie} objects.
+     * Converts TMDB's raw JSON into a list of {@link University} objects.
      *
      * <p>This method is {@code private} on purpose: it is an internal helper, not
      * something controllers should call. Keeping the JSON details in here means the
@@ -148,7 +148,7 @@ public class TmdbService {
      *       you will want when debugging.</li>
      * </ol>
      */
-    private List<Movie> parseMovies(String json) {
+    private List<University> parseMovies(String json) {
         // TODO: read the "results" array and build one Movie per element.
         throw new UnsupportedOperationException("TmdbService.parseMovies not implemented");
     }

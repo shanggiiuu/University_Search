@@ -10,10 +10,10 @@ import jakarta.persistence.Table;
  * A movie one user has saved to their favorites — one row in the {@code favorites}
  * table.
  *
- * <p>Why not just store a {@link Movie}? Because a favorite needs two extra things
+ * <p>Why not just store a {@link University}? Because a favorite needs two extra things
  * a Movie does not have: a database primary key, and the {@code username} of the
  * person who saved it. {@code FavoriteMovie} is the database shape;
- * {@link Movie} is the shape the browser sees. {@code FavoritesService} converts
+ * {@link University} is the shape the browser sees. {@code FavoritesService} converts
  * between them.
  *
  * <h2>TODO 1 — declare the remaining fields (all private)</h2>
@@ -58,7 +58,7 @@ import jakarta.persistence.Table;
  */
 @Entity
 @Table(name = "favorites")
-public class FavoriteMovie {
+public class FavoriteUniversity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

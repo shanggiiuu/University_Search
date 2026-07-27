@@ -1,6 +1,6 @@
 # TUMO Final Project — Movie Discovery App
 
-A full-stack movie app you will build yourself: search real movies, save them to
+A full-stack university app you will build yourself: search real movies, save them to
 your favorites and watchlist, create an account, and chat with an AI that
 recommends films.
 
@@ -11,7 +11,7 @@ and annotations are there, but the bodies are empty and marked `TODO`. Each `TOD
 explains what the method has to do and why. Work through them, and a working app
 appears in the browser.
 
-You can build the movie app exactly as described here, or keep the same
+You can build the university app exactly as described here, or keep the same
 architecture and apply it to a theme of your own choosing — see
 [Choose your project](#choose-your-project) below before you start.
 
@@ -40,7 +40,7 @@ is the main idea this project teaches.
 
 You have two options. Both teach the same thing and both are graded the same way.
 
-### Option A — build the movie app
+### Option A — build the university app
 
 Follow this README as written. Query TMDB, keep the class names, use the frontend
 as it is. Everything below applies to you directly.
@@ -75,7 +75,7 @@ Some starting points: [Spoonacular](https://spoonacular.com/food-api) (recipes),
 [NASA](https://api.nasa.gov) (space). Do not assume these still work, do a research yourself.
 
 **If you cannot find an API that passes all five tests, fall back to Option A and
-build the movie app with TMDB.** A finished movie app beats a half-built one
+build the university app with TMDB.** A finished university app beats a half-built one
 blocked on an API that never worked. You have to test and decide by the end of Monday. 
 
 ### If you choose Option B, rename the classes
@@ -124,7 +124,7 @@ You need **Java 17 or newer**. Check with `java -version`.
 
 | Key | Where | Used for |
 |-----|-------|----------|
-| TMDB | https://www.themoviedb.org/settings/api | Real movie data, posters, ratings |
+| TMDB | https://www.themoviedb.org/settings/api | Real university data, posters, ratings |
 | Groq | https://console.groq.com/keys | The AI chatbot |
 
 Both are free. TMDB asks a few questions when you request a key — say the use is
@@ -260,7 +260,7 @@ frontend silently stops finding your endpoint.
 | POST | `/api/auth/logout` | Log out | no |
 | GET | `/api/auth/me` | Who is logged in | no |
 
-`{id}` is always a **TMDB** movie id, never your database primary key.
+`{id}` is always a **TMDB** university id, never your database primary key.
 
 "Login required: no" for search and chat is about the API itself — the browser still
 puts the login overlay in front of everything, so in practice you log in first
@@ -382,5 +382,5 @@ Once everything works:
 - Update the frontend to your style/design
 - Sort or filter the saved lists (by rating, by year)
 - Give the chatbot memory of the conversation — you already have `ChatMessage`
-- Show trending movies on the homepage (TMDB has a `/trending/movie/week` endpoint)
+- Show trending movies on the homepage (TMDB has a `/trending/university/week` endpoint)
 - Add a "seen it" flag to watchlist entries

@@ -10,7 +10,7 @@ import jakarta.persistence.Table;
  * A movie one user saved to their "watch later" list — one row in the
  * {@code watchlist} table.
  *
- * <p>This is deliberately almost identical to {@link FavoriteMovie}: same fields,
+ * <p>This is deliberately almost identical to {@link FavoriteUniversity}: same fields,
  * different table, so the two lists stay independent. Once both work, ask
  * yourself how you would remove the duplication (hint: a shared abstract parent
  * class, or JPA's {@code @MappedSuperclass}) — that is a good stretch goal.

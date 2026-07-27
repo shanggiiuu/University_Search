@@ -42,7 +42,7 @@ package com.tumo.finalproject.model;
  * Jackson builds the JSON response from the getters, so a missing getter means a
  * missing field in the browser.
  */
-public class Movie {
+public class University {
 
     // TODO: fields, constructors, getters and setters go here.
 }

@@ -1,7 +1,7 @@
 package com.tumo.finalproject.service;
 
-import com.tumo.finalproject.model.FavoriteMovie;
-import com.tumo.finalproject.model.Movie;
+import com.tumo.finalproject.model.FavoriteUniversity;
+import com.tumo.finalproject.model.University;
 import com.tumo.finalproject.repository.FavoriteRepository;
 import org.springframework.stereotype.Service;
 
@@ -12,8 +12,8 @@ import java.util.List;
  *
  * <p>This class sits between the controller and the database and does one job the
  * others cannot: it <b>translates between two shapes of the same idea</b>.
- * {@link FavoriteMovie} is the database shape (has a primary key, has a username);
- * {@link Movie} is the shape the browser understands. The controller only ever sees
+ * {@link FavoriteUniversity} is the database shape (has a primary key, has a username);
+ * {@link University} is the shape the browser understands. The controller only ever sees
  * {@code Movie}, the repository only ever sees {@code FavoriteMovie}, and the two
  * conversion helpers at the bottom of this file are the border between them.
  *
@@ -45,7 +45,7 @@ public class FavoritesService {
      * Returns an empty list for a user with no favorites, which is exactly what the
      * frontend expects.
      */
-    public List<Movie> getFavorites(String username) {
+    public List<University> getFavorites(String username) {
         // TODO: load this user's rows and convert each to a Movie.
         throw new UnsupportedOperationException("FavoritesService.getFavorites not implemented");
     }
@@ -66,7 +66,7 @@ public class FavoritesService {
      * Checking first lets clicking the heart twice be harmless — the operation is
      * <b>idempotent</b>: doing it again changes nothing and still succeeds.
      */
-    public Movie addFavorite(String username, Movie movie) {
+    public University addFavorite(String username, University university) {
         // TODO: save the movie for this user unless it is already saved, then return it.
         throw new UnsupportedOperationException("FavoritesService.addFavorite not implemented");
     }
@@ -110,7 +110,7 @@ public class FavoritesService {
      * {@code f.getId()}, which is only meaningful inside our own table. Mixing these
      * two up is the classic bug in this project.
      */
-    private Movie toMovie(FavoriteMovie f) {
+    private University toMovie(FavoriteUniversity f) {
         // TODO: convert the entity into a Movie (use getTmdbId() as the Movie id).
         throw new UnsupportedOperationException("FavoritesService.toMovie not implemented");
     }
@@ -124,7 +124,7 @@ public class FavoritesService {
      * becomes the entity's {@code tmdbId}. You do not set the entity's {@code id}:
      * the database generates it when the row is inserted.
      */
-    private FavoriteMovie toEntity(String username, Movie m) {
+    private FavoriteUniversity toEntity(String username, University m) {
         // TODO: convert the Movie into a FavoriteMovie owned by this username.
         throw new UnsupportedOperationException("FavoritesService.toEntity not implemented");
     }
