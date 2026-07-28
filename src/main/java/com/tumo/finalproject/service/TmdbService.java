@@ -1,13 +1,13 @@
 package com.tumo.finalproject.service;
 
 import com.tumo.finalproject.model.University;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
+import java.util.ArrayList;
 import java.util.List;
-
 /**
  * Talks to The Movie Database (TMDB) so our app can search real movies.
  *
@@ -41,7 +41,6 @@ public class TmdbService {
     private ObjectMapper objectMapper;
 
     /** Your personal TMDB key, read from {@code application.properties}. */
-    private final String apiKey;
 
     /**
      * Spring calls this constructor at startup. {@code @Value} pulls
@@ -60,9 +59,12 @@ public class TmdbService {
      * Setting a {@code baseUrl} once means every request below only needs the path
      * ({@code "/search/movie"}) instead of the whole URL.
      */
-    public TmdbService(@Value("${tmdb.api.key}") String apiKey) {
-        this.apiKey = apiKey;
-        // TODO: initialise objectMapper and webClient here.
+    public TmdbService(){
+        this.objectMapper = new ObjectMapper();
+        this.webClient = WebClient.builder()
+                .baseUrl("http://universities.hipolabs.com")
+                .build();
+
     }
 
     /**
