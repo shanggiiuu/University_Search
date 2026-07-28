@@ -18,7 +18,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * HTTP endpoints for searching movies and managing the two saved lists.
+ * HTTP endpoints for searching universities (via the Hipolabs University API,
+ * {@code http://universities.hipolabs.com}) and managing the two saved lists.
  *
  * <p>A controller is the front door of the application. Its job is narrow and worth
  * remembering: <b>read the request, check the caller is allowed, delegate the real
@@ -64,12 +65,14 @@ import java.util.List;
  * </pre>
  */
 @RestController
-@RequestMapping("/api/movies")
+@RequestMapping("/api/university")
 public class UniversityController {
 
     private final TmdbService tmdbService;
     private final FavoritesService favoritesService;
     private final WatchlistService watchlistService;
+
+
 
     /**
      * Spring passes in all three services automatically because each is annotated
@@ -83,11 +86,17 @@ public class UniversityController {
         this.watchlistService = watchlistService;
     }
 
+
     /**
-     * {@code GET /api/movies/search?query=batman}
+     * {@code GET /api/movies/search?query=philippines}
      *
      * <p>{@code @RequestParam} pulls the {@code query} value out of the URL's query
-     * string and hands it to you as a String.
+     * string and hands it to you as a String. {@code tmdbService.searchMovies(query)}
+     * is expected to use it as the {@code country} parameter of the real API call,
+     * e.g. {@code http://universities.hipolabs.com/search?country=philippines}
+     * (Hipolabs also supports narrowing by name, e.g.
+     * {@code /search?name=Wollongong&country=australia}, if you want to support
+     * that too).
      *
      * <h2>TODO — implement</h2>
      * <ol>
@@ -100,9 +109,11 @@ public class UniversityController {
      * saving is not.
      */
     @GetMapping("/search")
-    public ResponseEntity<List<University>> searchMovies(@RequestParam String query) {
-        // TODO: validate the query, then return the search results.
-        throw new UnsupportedOperationException("MovieController.searchMovies not implemented");
+    public ResponseEntity<List<University>> searchUniversity(@RequestParam String query) {
+        if(query == null || query.isBlank()){
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(tmdbService.searchUniversity(query));
     }
 
     /**
@@ -115,33 +126,42 @@ public class UniversityController {
      */
     @GetMapping("/favorites")
     public ResponseEntity<List<University>> getFavorites(HttpSession session) {
-        // TODO: require a logged-in user, then return their favorites.
-        throw new UnsupportedOperationException("MovieController.getFavorites not implemented");
+        String username = currentUser(session);
+        if (username == null) {
+            return ResponseEntity.status(401).build();
+        }
+        return ResponseEntity.ok(favoritesService.getFavorites(username));
     }
 
     /**
-     * {@code POST /api/movies/favorites} — save a movie.
+     * {@code POST /api/movies/favorites} — save a university.
      *
-     * <p>{@code @RequestBody Movie movie} is where Jackson turns the JSON the browser
-     * sent into a real {@code Movie} object. If your {@code @JsonProperty}
-     * annotations in {@link University} are missing, the snake_case fields silently arrive
-     * as null and your favorites end up with no poster.
+     * <p>{@code @RequestBody University university} is where Jackson turns the JSON
+     * the browser sent into a real {@code University} object. If the
+     * {@code @JsonProperty("web_pages")} annotation in {@link University} is missing,
+     * that snake_case field silently arrives as null and your favorites end up with
+     * no website link.
      *
      * <h2>TODO — implement</h2>
      * Require a logged-in user (401 otherwise), then return
-     * {@code ResponseEntity.ok(favoritesService.addFavorite(username, movie))}.
+     * {@code ResponseEntity.ok(favoritesService.addFavorite(username, university))}.
      */
     @PostMapping("/favorites")
     public ResponseEntity<University> addFavorite(@RequestBody University university, HttpSession session) {
-        // TODO: require a logged-in user, then save the movie for them.
-        throw new UnsupportedOperationException("MovieController.addFavorite not implemented");
+        String username = currentUser(session);
+        if (username == null) {
+            return ResponseEntity.status(401).build();
+        }
+        return ResponseEntity.ok(favoritesService.addFavorite(username, university));
     }
 
     /**
-     * {@code DELETE /api/movies/favorites/123} — remove a movie.
+     * {@code DELETE /api/movies/favorites/123} — remove a university.
      *
-     * <p>{@code @PathVariable} captures the {@code {id}} segment from the URL. Here
-     * the id is a <b>TMDB</b> id, matching what {@code toMovie} put in the response.
+     * <p>{@code @PathVariable} captures the {@code {id}} segment from the URL. The
+     * Hipolabs API has no id field of its own, so this is whatever stable id you
+     * chose to expose on {@link University} — it just has to match what your
+     * favorites list was saved and returned with.
      *
      * <h2>TODO — implement</h2>
      * <ol>
@@ -154,8 +174,13 @@ public class UniversityController {
      */
     @DeleteMapping("/favorites/{id}")
     public ResponseEntity<Void> removeFavorite(@PathVariable int id, HttpSession session) {
+        String username = currentUser(session);
+        if (username == null) {
+            return ResponseEntity.status(401).build();
+        }
+        boolean removed = favoritesService.removeFavorite(username, id);
+        return removed ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
         // TODO: require a logged-in user, then delete and return 200 or 404.
-        throw new UnsupportedOperationException("MovieController.removeFavorite not implemented");
     }
 
     /**
@@ -166,25 +191,33 @@ public class UniversityController {
      */
     @GetMapping("/watchlist")
     public ResponseEntity<List<University>> getWatchlist(HttpSession session) {
+        String username = currentUser(session);
+        if (username == null) {
+            return ResponseEntity.status(401).build();
+        }
+        return ResponseEntity.ok(watchlistService.getWatchlist(username));
         // TODO: require a logged-in user, then return their watchlist.
-        throw new UnsupportedOperationException("MovieController.getWatchlist not implemented");
     }
 
     /**
-     * {@code POST /api/movies/watchlist} — save a movie for later.
+     * {@code POST /api/movies/watchlist} — save a university for later.
      *
      * <h2>TODO — implement</h2>
      * Same as {@link #addFavorite(University, HttpSession)}, calling
-     * {@code watchlistService.addToWatchlist(username, movie)}.
+     * {@code watchlistService.addToWatchlist(username, university)}.
      */
     @PostMapping("/watchlist")
     public ResponseEntity<University> addToWatchlist(@RequestBody University university, HttpSession session) {
+        String username = currentUser(session);
+        if (username == null) {
+            return ResponseEntity.status(401).build();
+        }
+        return ResponseEntity.ok(watchlistService.addToWatchlist(username, university));
         // TODO: require a logged-in user, then add the movie to their watchlist.
-        throw new UnsupportedOperationException("MovieController.addToWatchlist not implemented");
     }
 
     /**
-     * {@code DELETE /api/movies/watchlist/123} — take a movie off the watchlist.
+     * {@code DELETE /api/movies/watchlist/123} — take a university off the watchlist.
      *
      * <h2>TODO — implement</h2>
      * Same as {@link #removeFavorite(int, HttpSession)}, calling
@@ -192,8 +225,12 @@ public class UniversityController {
      */
     @DeleteMapping("/watchlist/{id}")
     public ResponseEntity<Void> removeFromWatchlist(@PathVariable int id, HttpSession session) {
-        // TODO: require a logged-in user, then delete and return 200 or 404.
-        throw new UnsupportedOperationException("MovieController.removeFromWatchlist not implemented");
+        String username = currentUser(session);
+        if (username == null) {
+            return ResponseEntity.status(401).build();
+        }
+        boolean removed = watchlistService.removeFromWatchlist(username, id);
+        return removed ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
     }
 
     /**
@@ -211,7 +248,6 @@ public class UniversityController {
      * the day you change how login works, you change it in one place.
      */
     private String currentUser(HttpSession session) {
-        // TODO: read the "username" attribute out of the session.
-        throw new UnsupportedOperationException("MovieController.currentUser not implemented");
+        return (String) session.getAttribute("username");
     }
 }

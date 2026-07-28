@@ -138,9 +138,9 @@ public class AuthController {
     public ResponseEntity<?> me(HttpSession session) {
         String username = (String) session.getAttribute("username");
         if(username != null){
-            return ResponseEntity.ok(Map.of("username", username));
+            return ResponseEntity.status(401).build();
         }
-        throw new UnsupportedOperationException("AuthController.me not implemented");
+        return ResponseEntity.ok(Map.of("username", username));
     }
 
     /**

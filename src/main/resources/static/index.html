@@ -1,58 +1,56 @@
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TUMO Movies</title>
+    <title>UniSearch — Find Your Dream University</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <link href="css/style.css?v=5" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="css/style.css?v=6" rel="stylesheet">
 </head>
 <body>
 
 <!-- Navbar -->
-<nav class="navbar navbar-expand-lg navbar-dark sticky-top">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="#">
-            <i class="bi bi-film"></i> TUMO Movies
-        </a>
-        <div class="d-flex align-items-center gap-3">
-            <button class="nav-btn" id="btnBrowse" onclick="showSection('browse')">
-                <i class="bi bi-search"></i> Browse
+<header class="site-header">
+    <div class="header-inner">
+        <a class="brand" href="#" onclick="goHome(); return false;">UniSearch<span class="brand-star">*</span></a>
+
+        <nav class="main-nav">
+            <a href="#" class="nav-link active" id="navHome" onclick="goHome(); return false;">Home</a>
+            <a href="#" class="nav-link" id="navUniversities" onclick="showSection('browse'); return false;">Universities</a>
+            <a href="#" class="nav-link" id="navFavorites" onclick="showSection('favorites'); return false;">Favorites</a>
+            <a href="#" class="nav-link" id="navAbout" onclick="showSection('about'); return false;">About</a>
+        </nav>
+
+        <div class="header-actions">
+            <button class="icon-btn" id="btnWatchlist" onclick="showSection('watchlist')" title="Watchlist">
+                <i class="bi bi-bookmark-fill"></i>
+                <span class="icon-badge d-none" id="watchCount">0</span>
             </button>
-            <button class="nav-btn" id="btnFavorites" onclick="showSection('favorites')">
-                <i class="bi bi-heart-fill"></i> Favorites
-                <span class="badge bg-danger ms-1 d-none" id="favCount">0</span>
+            <button class="icon-btn" id="btnChat" onclick="toggleChat()" title="AI Assistant">
+                <i class="bi bi-stars"></i>
             </button>
-            <button class="nav-btn" id="btnWatchlist" onclick="showSection('watchlist')">
-                <i class="bi bi-bookmark-fill"></i> Watchlist
-                <span class="badge bg-danger ms-1 d-none" id="watchCount">0</span>
-            </button>
-            <button class="nav-btn" id="btnChat" onclick="toggleChat()">
-                <i class="bi bi-robot"></i> AI Chat
+            <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle dark mode">
+                <i class="bi bi-moon-stars-fill"></i>
             </button>
             <span class="user-area d-none" id="userArea">
                 <i class="bi bi-person-circle"></i>
                 <span id="usernameLabel"></span>
-                <button class="nav-btn" id="btnLogout" onclick="logout()" title="Log out">
+                <button class="icon-btn" id="btnLogout" onclick="logout()" title="Log out">
                     <i class="bi bi-box-arrow-right"></i>
                 </button>
             </span>
         </div>
     </div>
-</nav>
+</header>
 
 <!-- Auth Overlay (login / register) -->
 <div class="auth-overlay" id="authOverlay">
     <div class="auth-card">
-        <div class="auth-brand">
-            <i class="bi bi-film"></i> TUMO Movies
-        </div>
-        <p class="auth-subtitle" id="authSubtitle">Log in to see your favorite movies</p>
+        <div class="auth-brand">UniSearch<span class="brand-star">*</span></div>
+        <p class="auth-subtitle" id="authSubtitle">Log in to save your favorite universities</p>
 
         <div class="auth-error d-none" id="authError"></div>
 
@@ -65,7 +63,7 @@
                    placeholder="Password" autocomplete="current-password">
         </div>
 
-        <button class="btn btn-danger w-100 mb-2" id="authSubmitBtn" onclick="submitAuth()">
+        <button class="btn btn-primary w-100 mb-2" id="authSubmitBtn" onclick="submitAuth()">
             Log In
         </button>
 
@@ -76,74 +74,177 @@
     </div>
 </div>
 
-<!-- Search Bar -->
-<div class="search-section">
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-md-8 col-lg-6">
-                <div class="input-group search-bar">
-                    <input type="text" class="form-control" id="searchInput"
-                           placeholder="Search for movies..." autocomplete="off">
-                    <button class="btn btn-danger" onclick="searchMovies()">
-                        <i class="bi bi-search"></i>
-                    </button>
-                </div>
+<!-- Hero -->
+<section class="hero" id="heroSection">
+    <div class="hero-inner">
+        <div class="hero-copy">
+            <h1>Find Your<br>Dream University <span class="wave">:)</span></h1>
+            <p class="hero-sub">Search over 9,000+ universities<br>from 180+ countries around the world.</p>
+
+            <div class="hero-search">
+                <i class="bi bi-search"></i>
+                <input type="text" id="searchInput" placeholder="Search by country...">
+                <button onclick="searchUniversities()"><i class="bi bi-search"></i></button>
             </div>
+
+            <div class="popular-searches">
+                <span class="popular-label">Popular searches:</span>
+                <button class="chip" onclick="quickSearch('Philippines')">Philippines</button>
+                <button class="chip" onclick="quickSearch('Japan')">Japan</button>
+                <button class="chip" onclick="quickSearch('Singapore')">Singapore</button>
+                <button class="chip" onclick="quickSearch('Canada')">Canada</button>
+                <button class="chip" onclick="quickSearch('USA')">USA</button>
+            </div>
+        </div>
+
+        <div class="hero-graphic" aria-hidden="true">
+            <svg viewBox="0 0 320 320" class="orbit-rings">
+                <circle cx="160" cy="160" r="150" class="ring ring-1"></circle>
+                <circle cx="160" cy="160" r="115" class="ring ring-2"></circle>
+                <circle cx="160" cy="160" r="80" class="ring ring-3"></circle>
+                <circle cx="160" cy="160" r="10" class="ring-dot"></circle>
+                <defs>
+                    <path id="ringPath" d="M 160,160 m -132,0 a 132,132 0 1,1 264,0 a 132,132 0 1,1 -264,0"></path>
+                </defs>
+                <text class="ring-text">
+                    <textPath href="#ringPath" startOffset="0%">Explore &#8226; Discover &#8226; Achieve &#8226; Explore &#8226; Discover &#8226; Achieve &#8226;</textPath>
+                </text>
+            </svg>
+            <i class="bi bi-mortarboard-fill grad-icon"></i>
+            <i class="bi bi-search scope-icon"></i>
+        </div>
+
+        <div class="hero-welcome">
+            <h2>Welcome to<br>UniSearch<span class="brand-star">*</span></h2>
+            <p>Begin your journey today, the world is full of opportunities waiting for you to achieve.</p>
+        </div>
+    </div>
+</section>
+
+<!-- Stats bar -->
+<div class="stats-wrap">
+    <div class="stats-bar">
+        <div class="stat">
+            <i class="bi bi-globe2"></i>
+            <div><strong>180+</strong><span>Countries</span></div>
+        </div>
+        <div class="stat">
+            <i class="bi bi-mortarboard"></i>
+            <div><strong>9,000+</strong><span>Universities</span></div>
+        </div>
+        <div class="stat">
+            <i class="bi bi-lightning-charge"></i>
+            <div><strong>&lt;1s</strong><span>Fast Search</span></div>
+        </div>
+        <div class="stat">
+            <i class="bi bi-stars"></i>
+            <div><strong>Always</strong><span>Free to Use</span></div>
         </div>
     </div>
 </div>
 
-<!-- Browse Section -->
-<section id="browseSection" class="container-fluid px-4 mt-3">
-    <h4 class="section-title" id="resultsTitle">Search for a university to get started</h4>
-    <div class="university-grid" id="movieGrid"></div>
-    <div class="text-center py-5 d-none" id="noResults">
-        <i class="bi bi-camera-reels" style="font-size: 3rem; color: #555;"></i>
-        <p class="text-muted mt-2">No movies found. Try a different search.</p>
-    </div>
-</section>
+<main class="page-main">
 
-<!-- Favorites Section -->
-<section id="favoritesSection" class="container-fluid px-4 mt-3 d-none">
-    <h4 class="section-title"><i class="bi bi-heart-fill text-danger"></i> My Favorites</h4>
-    <div class="university-grid" id="favoritesGrid"></div>
-    <div class="text-center py-5 d-none" id="noFavorites">
-        <i class="bi bi-heart" style="font-size: 3rem; color: #555;"></i>
-        <p class="text-muted mt-2">No favorites yet. Search and add some movies!</p>
-    </div>
-</section>
+    <!-- Browse Section -->
+    <section id="browseSection" class="browse-layout">
+        <aside class="sidebar">
+            <h3>Search by Country</h3>
+            <div class="sidebar-select">
+                <i class="bi bi-globe2"></i>
+                <select id="countrySelect" onchange="onCountrySelect()">
+                    <option value="">Select a country</option>
+                </select>
+            </div>
 
-<!-- Watchlist Section -->
-<section id="watchlistSection" class="container-fluid px-4 mt-3 d-none">
-    <h4 class="section-title"><i class="bi bi-bookmark-fill text-danger"></i> Watch Later</h4>
-    <div class="university-grid" id="watchlistGrid"></div>
-    <div class="text-center py-5 d-none" id="noWatchlist">
-        <i class="bi bi-bookmark" style="font-size: 3rem; color: #555;"></i>
-        <p class="text-muted mt-2">Nothing saved yet. Ask the AI Chat for recommendations and save them for later!</p>
-    </div>
-</section>
+            <hr>
 
-<!-- Movie Detail Modal -->
-<div class="modal fade" id="movieModal" tabindex="-1">
+            <div class="quick-tips">
+                <p><i class="bi bi-info-circle"></i> Quick Tips</p>
+                <p class="quick-tips-body">Type a country name above and click search to see universities.</p>
+            </div>
+
+            <div class="sidebar-actions">
+                <button class="btn btn-primary w-100" onclick="searchUniversities()">
+                    Search <i class="bi bi-arrow-right"></i>
+                </button>
+                <button class="btn btn-outline-secondary w-100" onclick="clearSearch()">
+                    Clear <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+        </aside>
+
+        <div class="results-col">
+            <div class="results-header">
+                <div class="results-showing" id="resultsShowing"></div>
+                <div class="results-total" id="resultsTotal"></div>
+            </div>
+
+            <h4 class="section-title" id="resultsTitle">Search for a country to get started</h4>
+            <div class="university-grid" id="universityGrid"></div>
+            <div class="text-center py-5 d-none" id="noResults">
+                <i class="bi bi-emoji-frown"></i>
+                <p>No universities found. Try a different country.</p>
+            </div>
+            <div class="text-center d-none" id="loadMoreWrap">
+                <button class="btn btn-outline-primary load-more-btn" id="loadMoreBtn" onclick="loadMore()">
+                    Load More <i class="bi bi-chevron-down"></i>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Favorites Section -->
+    <section id="favoritesSection" class="container-fluid px-0 d-none">
+        <h4 class="section-title"><i class="bi bi-bookmark-star-fill"></i> My Favorites</h4>
+        <div class="university-grid" id="favoritesGrid"></div>
+        <div class="text-center py-5 d-none" id="noFavorites">
+            <i class="bi bi-bookmark-star"></i>
+            <p>No favorites yet. Search and save some universities!</p>
+        </div>
+    </section>
+
+    <!-- Watchlist Section -->
+    <section id="watchlistSection" class="container-fluid px-0 d-none">
+        <h4 class="section-title"><i class="bi bi-bookmark-fill"></i> Watch Later</h4>
+        <div class="university-grid" id="watchlistGrid"></div>
+        <div class="text-center py-5 d-none" id="noWatchlist">
+            <i class="bi bi-bookmark"></i>
+            <p>Nothing saved yet. Ask the AI Assistant for recommendations and save them for later!</p>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="aboutSection" class="about-section d-none">
+        <h2>About UniSearch<span class="brand-star">*</span></h2>
+        <p>
+            UniSearch helps students explore over 9,000 universities across 180+ countries,
+            using open data from the Hipolabs University API. Search by country, save the
+            schools you're interested in, and ask the AI assistant for tailored recommendations.
+        </p>
+    </section>
+
+</main>
+
+<!-- University Detail Modal -->
+<div class="modal fade" id="universityModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
-            <button type="button" class="btn-close btn-close-white modal-close-btn" data-bs-dismiss="modal"></button>
-            <div class="modal-body p-0">
+            <button type="button" class="btn-close modal-close-btn" data-bs-dismiss="modal"></button>
+            <div class="modal-body">
                 <div class="university-detail">
-                    <div class="university-detail-poster">
-                        <img id="modalPoster" src="" alt="">
+                    <div class="university-detail-icon"><i class="bi bi-bank2"></i></div>
+                    <h2 id="modalName"></h2>
+                    <div class="university-meta">
+                        <span><i class="bi bi-geo-alt-fill"></i> <span id="modalCountry"></span></span>
+                        <span><i class="bi bi-globe2"></i> <span id="modalDomain"></span></span>
+                        <span><i class="bi bi-envelope-fill"></i> <span id="modalEmail"></span></span>
                     </div>
-                    <div class="university-detail-info">
-                        <h2 id="modalTitle"></h2>
-                        <div class="university-meta">
-                            <span class="rating-badge"><i class="bi bi-star-fill"></i> <span id="modalRating"></span></span>
-                            <span class="text-muted" id="modalDate"></span>
-                        </div>
-                        <p class="university-overview" id="modalOverview"></p>
-                        <button class="btn btn-danger btn-lg" id="modalFavBtn" onclick="toggleFavoriteFromModal()">
-                            <i class="bi bi-heart"></i> Add to Favorites
-                        </button>
-                    </div>
+                    <a href="#" target="_blank" rel="noopener" class="btn btn-primary btn-lg" id="modalWebsiteBtn">
+                        View Website <i class="bi bi-box-arrow-up-right"></i>
+                    </a>
+                    <button class="btn btn-outline-primary btn-lg" id="modalFavBtn" onclick="toggleFavoriteFromModal()">
+                        <i class="bi bi-bookmark"></i> Save to Favorites
+                    </button>
                 </div>
             </div>
         </div>
@@ -153,33 +254,75 @@
 <!-- Chat Sidebar -->
 <div class="chat-sidebar" id="chatSidebar">
     <div class="chat-header">
-        <h5><i class="bi bi-robot"></i> Movie Recommender</h5>
-        <button class="btn-close btn-close-white" onclick="toggleChat()"></button>
+        <h5><i class="bi bi-stars"></i> University Assistant</h5>
+        <button class="btn-close" onclick="toggleChat()"></button>
     </div>
     <div class="chat-messages" id="chatMessages">
         <div class="chat-msg bot">
-            <p>Hi! I'm your university recommendation assistant. Tell me what kind of movies you like, and I'll suggest something great!</p>
+            <p>Hi! I'm your university recommendation assistant. Tell me what you're looking for — country, field of study, budget — and I'll suggest some great options!</p>
         </div>
     </div>
     <div class="chat-input">
         <div class="input-group">
             <input type="text" class="form-control" id="chatInput"
                    placeholder="Ask for a recommendation..." autocomplete="off">
-            <button class="btn btn-danger" onclick="sendChat()" id="chatSendBtn">
+            <button class="btn btn-primary" onclick="sendChat()" id="chatSendBtn">
                 <i class="bi bi-send-fill"></i>
             </button>
         </div>
     </div>
 </div>
 
+<!-- Footer -->
+<footer class="site-footer">
+    <div class="footer-inner">
+        <div class="footer-brand">
+            <div class="brand">UniSearch<span class="brand-star">*</span></div>
+            <p>Find universities. Build your future.</p>
+        </div>
+
+        <div class="footer-col">
+            <h6>Navigation</h6>
+            <a href="#" onclick="goHome(); return false;">Home</a>
+            <a href="#" onclick="showSection('browse'); return false;">Universities</a>
+            <a href="#" onclick="showSection('favorites'); return false;">Favorites</a>
+            <a href="#" onclick="showSection('about'); return false;">About</a>
+        </div>
+
+        <div class="footer-col">
+            <h6>Resources</h6>
+            <a href="https://universities.hipolabs.com" target="_blank" rel="noopener">About API</a>
+            <a href="https://github.com" target="_blank" rel="noopener">GitHub</a>
+            <a href="#" onclick="showSection('about'); return false;">Contact</a>
+        </div>
+
+        <div class="footer-col">
+            <h6>Connect</h6>
+            <p class="footer-tagline">Let's build the future together.</p>
+            <div class="footer-social">
+                <a href="https://github.com" target="_blank" rel="noopener"><i class="bi bi-github"></i></a>
+                <a href="mailto:hello@unisearch.app"><i class="bi bi-envelope-fill"></i></a>
+                <a href="#"><i class="bi bi-globe2"></i></a>
+            </div>
+        </div>
+
+        <div class="footer-badge">
+            <div class="badge-circle">
+                <span>Dream.<br>Search.<br>Achieve.</span>
+            </div>
+        </div>
+    </div>
+    <p class="footer-copyright">© 2023-2025 UniSearch Project :)</p>
+</footer>
+
 <!-- Loading Spinner -->
 <div class="loading-overlay d-none" id="loadingOverlay">
-    <div class="spinner-border text-danger" role="status">
+    <div class="spinner-border" role="status">
         <span class="visually-hidden">Loading...</span>
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="js/app.js?v=5"></script>
+<script src="js/app.js?v=6"></script>
 </body>
 </html>

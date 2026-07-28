@@ -1,18 +1,28 @@
 const API_BASE = '/api';
-const TMDB_IMG = 'https://image.tmdb.org/t/p/w500';
+const PAGE_SIZE = 6;
 
-let currentMovies = [];
+const COUNTRIES = [
+    'Philippines', 'Japan', 'Singapore', 'Canada', 'USA', 'United Kingdom',
+    'Australia', 'Germany', 'France', 'Armenia', 'India', 'Brazil',
+    'South Korea', 'Italy', 'Spain', 'Mexico', 'China', 'Netherlands'
+];
+
+let currentUniversities = [];
 let favorites = [];
 let watchlist = [];
-let selectedMovie = null;
+let selectedUniversity = null;
 let authMode = 'login'; // 'login' or 'register'
+let currentQuery = '';
+let visibleCount = PAGE_SIZE;
 
 // --- Init ---
 document.addEventListener('DOMContentLoaded', () => {
     checkAuth();
+    initTheme();
+    populateCountryDropdown();
 
     document.getElementById('searchInput').addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') searchMovies();
+        if (e.key === 'Enter') searchUniversities();
     });
 
     document.getElementById('chatInput').addEventListener('keydown', (e) => {
@@ -25,9 +35,56 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('authUsername').addEventListener('keydown', (e) => {
         if (e.key === 'Enter') document.getElementById('authPassword').focus();
     });
-
-    document.getElementById('btnBrowse').classList.add('active');
 });
+
+// --- Theme ---
+function initTheme() {
+    const saved = localStorage.getItem('unisearch-theme');
+    const theme = saved || 'light';
+    applyTheme(theme);
+}
+
+function applyTheme(theme) {
+    if (theme === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        document.getElementById('themeToggle').innerHTML = '<i class="bi bi-sun-fill"></i>';
+    } else {
+        document.documentElement.removeAttribute('data-theme');
+        document.getElementById('themeToggle').innerHTML = '<i class="bi bi-moon-stars-fill"></i>';
+    }
+    localStorage.setItem('unisearch-theme', theme);
+}
+
+function toggleTheme() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    applyTheme(isDark ? 'light' : 'dark');
+}
+
+// --- Country dropdown ---
+function populateCountryDropdown() {
+    const select = document.getElementById('countrySelect');
+    COUNTRIES.forEach(country => {
+        const opt = document.createElement('option');
+        opt.value = country;
+        opt.textContent = country;
+        select.appendChild(opt);
+    });
+}
+
+function onCountrySelect() {
+    const value = document.getElementById('countrySelect').value;
+    if (value) {
+        document.getElementById('searchInput').value = value;
+        searchUniversities();
+    }
+}
+
+function quickSearch(country) {
+    document.getElementById('searchInput').value = country;
+    document.getElementById('countrySelect').value = country;
+    showSection('browse');
+    searchUniversities();
+}
 
 // --- Auth ---
 async function checkAuth() {
@@ -65,7 +122,7 @@ function toggleAuthMode() {
     authMode = authMode === 'login' ? 'register' : 'login';
     const isLogin = authMode === 'login';
     document.getElementById('authSubtitle').textContent =
-        isLogin ? 'Log in to see your favorite movies' : 'Create an account to save your favorites';
+        isLogin ? 'Log in to save your favorite universities' : 'Create an account to save your favorites';
     document.getElementById('authSubmitBtn').textContent = isLogin ? 'Log In' : 'Sign Up';
     document.getElementById('authTogglePrompt').textContent =
         isLogin ? "Don't have an account?" : 'Already have an account?';
@@ -114,11 +171,10 @@ async function logout() {
     }
     favorites = [];
     watchlist = [];
-    currentMovies = [];
-    document.getElementById('movieGrid').innerHTML = '';
+    currentUniversities = [];
+    document.getElementById('universityGrid').innerHTML = '';
     document.getElementById('favoritesGrid').innerHTML = '';
     document.getElementById('watchlistGrid').innerHTML = '';
-    updateFavCount();
     updateWatchCount();
     authMode = 'login';
     toggleAuthMode();      // reset labels then...
@@ -137,70 +193,118 @@ function hideAuthError() {
 }
 
 // --- Navigation ---
+function goHome() {
+    showSection('browse');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 function showSection(section) {
     document.getElementById('browseSection').classList.toggle('d-none', section !== 'browse');
     document.getElementById('favoritesSection').classList.toggle('d-none', section !== 'favorites');
     document.getElementById('watchlistSection').classList.toggle('d-none', section !== 'watchlist');
-    document.getElementById('btnBrowse').classList.toggle('active', section === 'browse');
-    document.getElementById('btnFavorites').classList.toggle('active', section === 'favorites');
-    document.getElementById('btnWatchlist').classList.toggle('active', section === 'watchlist');
+    document.getElementById('aboutSection').classList.toggle('d-none', section !== 'about');
+
+    document.getElementById('navHome').classList.toggle('active', section === 'browse' && !currentQuery);
+    document.getElementById('navUniversities').classList.toggle('active', section === 'browse');
+    document.getElementById('navFavorites').classList.toggle('active', section === 'favorites');
+    document.getElementById('navAbout').classList.toggle('active', section === 'about');
 
     if (section === 'favorites') {
         loadFavorites();
     } else if (section === 'watchlist') {
         loadWatchlist();
     }
+
+    if (section !== 'about') {
+        document.querySelector('.page-main').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 }
 
 // --- Search ---
-async function searchMovies() {
+async function searchUniversities() {
     const query = document.getElementById('searchInput').value.trim();
     if (!query) return;
 
+    currentQuery = query;
+    showSection('browse');
     showLoading(true);
     try {
-        const res = await fetch(`${API_BASE}/movies/search?query=${encodeURIComponent(query)}`);
+        const res = await fetch(`${API_BASE}/university/search?query=${encodeURIComponent(query)}`);
         if (!res.ok) throw new Error('Search failed');
-        currentMovies = await res.json();
-        renderMovieGrid(currentMovies, 'movieGrid');
-        document.getElementById('resultsTitle').textContent =
-            currentMovies.length > 0 ? `Results for "${query}"` : '';
-        document.getElementById('noResults').classList.toggle('d-none', currentMovies.length > 0);
+        currentUniversities = await res.json();
+        visibleCount = PAGE_SIZE;
+        renderResults(query);
     } catch (err) {
         console.error(err);
-        document.getElementById('resultsTitle').textContent = 'Error searching movies';
+        document.getElementById('resultsTitle').textContent = 'Error searching universities';
     } finally {
         showLoading(false);
     }
 }
 
+function clearSearch() {
+    currentQuery = '';
+    currentUniversities = [];
+    document.getElementById('searchInput').value = '';
+    document.getElementById('countrySelect').value = '';
+    document.getElementById('universityGrid').innerHTML = '';
+    document.getElementById('resultsShowing').innerHTML = '';
+    document.getElementById('resultsTotal').textContent = '';
+    document.getElementById('resultsTitle').textContent = 'Search for a country to get started';
+    document.getElementById('noResults').classList.add('d-none');
+    document.getElementById('loadMoreWrap').classList.add('d-none');
+}
+
+function renderResults(query) {
+    const hasResults = currentUniversities.length > 0;
+    document.getElementById('resultsTitle').textContent = hasResults ? '' : '';
+    document.getElementById('noResults').classList.toggle('d-none', hasResults);
+
+    document.getElementById('resultsShowing').innerHTML = hasResults
+        ? `Showing results for: <span class="filter-tag">${escapeHtml(query)}
+             <button onclick="clearSearch()" title="Clear filter">✕</button></span>`
+        : '';
+    document.getElementById('resultsTotal').innerHTML = hasResults
+        ? `Total Results: <strong>${currentUniversities.length}</strong>`
+        : '';
+
+    const visible = currentUniversities.slice(0, visibleCount);
+    renderUniversityGrid(visible, 'universityGrid', 'search');
+    document.getElementById('loadMoreWrap').classList.toggle(
+        'd-none', visibleCount >= currentUniversities.length);
+}
+
+function loadMore() {
+    visibleCount += PAGE_SIZE;
+    renderResults(currentQuery);
+}
+
 // --- Favorites ---
 async function loadFavorites() {
     try {
-        const res = await fetch(`${API_BASE}/movies/favorites`);
+        const res = await fetch(`${API_BASE}/university/favorites`);
         if (res.status === 401) {
             showAuthOverlay();
             return;
         }
         favorites = await res.json();
-        updateFavCount();
-        renderMovieGrid(favorites, 'favoritesGrid');
+        renderUniversityGrid(favorites, 'favoritesGrid', 'favorites');
         document.getElementById('noFavorites').classList.toggle('d-none', favorites.length > 0);
-        // Re-render search results to update heart icons
-        if (currentMovies.length > 0) {
-            renderMovieGrid(currentMovies, 'movieGrid');
+        // Re-render search results to update bookmark icons
+        if (currentUniversities.length > 0) {
+            renderResults(currentQuery);
         }
     } catch (err) {
         console.error('Failed to load favorites', err);
     }
 }
 
-async function addFavorite(movie) {
+async function addFavorite(university) {
     try {
-        await fetch(`${API_BASE}/movies/favorites`, {
+        await fetch(`${API_BASE}/university/favorites`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(movie)
+            body: JSON.stringify(university)
         });
         await loadFavorites();
     } catch (err) {
@@ -210,7 +314,7 @@ async function addFavorite(movie) {
 
 async function removeFavorite(id) {
     try {
-        await fetch(`${API_BASE}/movies/favorites/${id}`, { method: 'DELETE' });
+        await fetch(`${API_BASE}/university/favorites/${id}`, { method: 'DELETE' });
         await loadFavorites();
     } catch (err) {
         console.error('Failed to remove favorite', err);
@@ -218,42 +322,32 @@ async function removeFavorite(id) {
 }
 
 function isFavorite(id) {
-    return favorites.some(m => m.id === id);
-}
-
-function updateFavCount() {
-    const badge = document.getElementById('favCount');
-    if (favorites.length > 0) {
-        badge.textContent = favorites.length;
-        badge.classList.remove('d-none');
-    } else {
-        badge.classList.add('d-none');
-    }
+    return favorites.some(u => u.id === id);
 }
 
 // --- Watchlist (save for later) ---
 async function loadWatchlist() {
     try {
-        const res = await fetch(`${API_BASE}/movies/watchlist`);
+        const res = await fetch(`${API_BASE}/university/watchlist`);
         if (res.status === 401) {
             showAuthOverlay();
             return;
         }
         watchlist = await res.json();
         updateWatchCount();
-        renderMovieGrid(watchlist, 'watchlistGrid', 'watchlist');
+        renderUniversityGrid(watchlist, 'watchlistGrid', 'watchlist');
         document.getElementById('noWatchlist').classList.toggle('d-none', watchlist.length > 0);
     } catch (err) {
         console.error('Failed to load watchlist', err);
     }
 }
 
-async function addToWatchlist(movie) {
+async function addToWatchlist(university) {
     try {
-        await fetch(`${API_BASE}/movies/watchlist`, {
+        await fetch(`${API_BASE}/university/watchlist`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(movie)
+            body: JSON.stringify(university)
         });
         await loadWatchlist();
     } catch (err) {
@@ -263,7 +357,7 @@ async function addToWatchlist(movie) {
 
 async function removeFromWatchlist(id) {
     try {
-        await fetch(`${API_BASE}/movies/watchlist/${id}`, { method: 'DELETE' });
+        await fetch(`${API_BASE}/university/watchlist/${id}`, { method: 'DELETE' });
         await loadWatchlist();
     } catch (err) {
         console.error('Failed to remove from watchlist', err);
@@ -271,7 +365,7 @@ async function removeFromWatchlist(id) {
 }
 
 function isInWatchlist(id) {
-    return watchlist.some(m => m.id === id);
+    return watchlist.some(u => u.id === id);
 }
 
 function updateWatchCount() {
@@ -285,102 +379,101 @@ function updateWatchCount() {
 }
 
 // --- Rendering ---
-function renderMovieGrid(movies, containerId, mode = 'favorites') {
+function renderUniversityGrid(universities, containerId, mode) {
     const container = document.getElementById(containerId);
-    container.innerHTML = movies.map(movie => {
-        const posterUrl = movie.poster_path
-            ? `${TMDB_IMG}${movie.poster_path}`
-            : null;
-        const year = movie.release_date ? movie.release_date.substring(0, 4) : '';
-        const rating = movie.vote_average ? movie.vote_average.toFixed(1) : 'N/A';
+    container.innerHTML = universities.map((uni, index) => {
+        const domain = (uni.domains && uni.domains[0]) || 'No domain listed';
+        const website = (uni.webPages && uni.webPages[0]) || '#';
 
-        let actionBtn;
+        let bookmarkBtn;
         if (mode === 'watchlist') {
-            actionBtn = `
-                <button class="fav-btn active"
-                        onclick="event.stopPropagation(); removeFromWatchlist(${movie.id})"
+            bookmarkBtn = `
+                <button class="bookmark-btn active"
+                        onclick="event.stopPropagation(); removeFromWatchlist(${uni.id})"
                         title="Remove from watchlist">
                     <i class="bi bi-bookmark-x-fill"></i>
                 </button>`;
         } else {
-            const isFav = isFavorite(movie.id);
-            actionBtn = `
-                <button class="fav-btn ${isFav ? 'active' : ''}"
-                        onclick="event.stopPropagation(); toggleFavorite(${movie.id})"
+            const isFav = isFavorite(uni.id);
+            bookmarkBtn = `
+                <button class="bookmark-btn ${isFav ? 'active' : ''}"
+                        onclick="event.stopPropagation(); toggleFavorite(${uni.id})"
                         title="${isFav ? 'Remove from favorites' : 'Add to favorites'}">
-                    <i class="bi ${isFav ? 'bi-heart-fill' : 'bi-heart'}"></i>
+                    <i class="bi ${isFav ? 'bi-bookmark-fill' : 'bi-bookmark'}"></i>
                 </button>`;
         }
 
+        const indexLabel = mode === 'search'
+            ? `<span class="uni-index">${String(index + 1).padStart(2, '0')}<span class="brand-star">*</span></span>`
+            : `<span class="uni-index"><i class="bi bi-bank2"></i></span>`;
+
         return `
-            <div class="movie-card" onclick="openDetail(${movie.id})">
-                ${posterUrl
-                    ? `<img class="poster" src="${posterUrl}" alt="${escapeHtml(movie.title)}" loading="lazy">`
-                    : `<div class="no-poster"><i class="bi bi-film"></i></div>`
-                }
-                <div class="card-body">
-                    <div class="card-title" title="${escapeHtml(movie.title)}">${escapeHtml(movie.title)}</div>
-                    <div class="card-meta">
-                        <span class="rating-badge"><i class="bi bi-star-fill"></i> ${rating}</span>
-                        <span class="text-muted">${year}</span>
-                        ${actionBtn}
-                    </div>
+            <div class="uni-card" onclick="openDetail(${uni.id})">
+                <div class="uni-card-top">
+                    ${indexLabel}
+                    ${bookmarkBtn}
                 </div>
+                <div class="uni-name" title="${escapeHtml(uni.name)}">${escapeHtml(uni.name)}</div>
+                <div class="uni-meta-row"><i class="bi bi-geo-alt-fill"></i> ${escapeHtml(uni.country || '')}</div>
+                <div class="uni-meta-row"><i class="bi bi-globe2"></i> ${escapeHtml(domain)}</div>
+                <div class="uni-meta-row"><i class="bi bi-envelope-fill"></i> ${escapeHtml(domain)}</div>
+                <a class="uni-website-link" href="${website}" target="_blank" rel="noopener"
+                   onclick="event.stopPropagation()">
+                    View Website <i class="bi bi-box-arrow-up-right"></i>
+                </a>
             </div>
         `;
     }).join('');
 }
 
-// --- Movie Detail Modal ---
-function openDetail(movieId) {
-    const movie = findMovie(movieId);
-    if (!movie) return;
+// --- University Detail Modal ---
+function openDetail(universityId) {
+    const uni = findUniversity(universityId);
+    if (!uni) return;
 
-    selectedMovie = movie;
-    const posterUrl = movie.poster_path ? `${TMDB_IMG}${movie.poster_path}` : '';
-    const isFav = isFavorite(movie.id);
+    selectedUniversity = uni;
+    const domain = (uni.domains && uni.domains[0]) || 'No domain listed';
+    const website = (uni.webPages && uni.webPages[0]) || '#';
+    const isFav = isFavorite(uni.id);
 
-    document.getElementById('modalPoster').src = posterUrl;
-    document.getElementById('modalPoster').style.display = posterUrl ? 'block' : 'none';
-    document.getElementById('modalTitle').textContent = movie.title;
-    document.getElementById('modalRating').textContent = movie.vote_average ? movie.vote_average.toFixed(1) : 'N/A';
-    document.getElementById('modalDate').textContent = movie.release_date || 'Unknown';
-    document.getElementById('modalOverview').textContent = movie.overview || 'No overview available.';
+    document.getElementById('modalName').textContent = uni.name;
+    document.getElementById('modalCountry').textContent = uni.country || 'Unknown';
+    document.getElementById('modalDomain').textContent = domain;
+    document.getElementById('modalEmail').textContent = domain;
+    document.getElementById('modalWebsiteBtn').href = website;
 
     const favBtn = document.getElementById('modalFavBtn');
     favBtn.innerHTML = isFav
-        ? '<i class="bi bi-heart-fill"></i> Remove from Favorites'
-        : '<i class="bi bi-heart"></i> Add to Favorites';
-    favBtn.className = isFav ? 'btn btn-outline-danger btn-lg' : 'btn btn-danger btn-lg';
+        ? '<i class="bi bi-bookmark-fill"></i> Remove from Favorites'
+        : '<i class="bi bi-bookmark"></i> Save to Favorites';
 
-    new bootstrap.Modal(document.getElementById('movieModal')).show();
+    new bootstrap.Modal(document.getElementById('universityModal')).show();
 }
 
 async function toggleFavoriteFromModal() {
-    if (!selectedMovie) return;
-    await toggleFavorite(selectedMovie.id);
+    if (!selectedUniversity) return;
+    await toggleFavorite(selectedUniversity.id);
 
-    const isFav = isFavorite(selectedMovie.id);
+    const isFav = isFavorite(selectedUniversity.id);
     const favBtn = document.getElementById('modalFavBtn');
     favBtn.innerHTML = isFav
-        ? '<i class="bi bi-heart-fill"></i> Remove from Favorites'
-        : '<i class="bi bi-heart"></i> Add to Favorites';
-    favBtn.className = isFav ? 'btn btn-outline-danger btn-lg' : 'btn btn-danger btn-lg';
+        ? '<i class="bi bi-bookmark-fill"></i> Remove from Favorites'
+        : '<i class="bi bi-bookmark"></i> Save to Favorites';
 }
 
-async function toggleFavorite(movieId) {
-    if (isFavorite(movieId)) {
-        await removeFavorite(movieId);
+async function toggleFavorite(universityId) {
+    if (isFavorite(universityId)) {
+        await removeFavorite(universityId);
     } else {
-        const movie = findMovie(movieId);
-        if (movie) await addFavorite(movie);
+        const uni = findUniversity(universityId);
+        if (uni) await addFavorite(uni);
     }
 }
 
-function findMovie(id) {
-    return currentMovies.find(m => m.id === id)
-        || favorites.find(m => m.id === id)
-        || watchlist.find(m => m.id === id);
+function findUniversity(id) {
+    return currentUniversities.find(u => u.id === id)
+        || favorites.find(u => u.id === id)
+        || watchlist.find(u => u.id === id);
 }
 
 // --- Chat ---
@@ -423,24 +516,23 @@ async function sendChat() {
     }
 }
 
-function appendChatRecommendations(movies) {
+function appendChatRecommendations(universities) {
     const container = document.getElementById('chatMessages');
     const wrap = document.createElement('div');
     wrap.className = 'chat-recs';
 
-    movies.forEach(movie => {
-        const year = movie.release_date ? movie.release_date.substring(0, 4) : '';
+    universities.forEach(uni => {
         const chip = document.createElement('div');
         chip.className = 'chat-rec';
 
         const label = document.createElement('span');
         label.className = 'chat-rec-title';
-        label.textContent = year ? `${movie.title} (${year})` : movie.title;
+        label.textContent = uni.country ? `${uni.name} (${uni.country})` : uni.name;
 
         const btn = document.createElement('button');
         btn.className = 'chat-rec-btn';
-        setSaveButtonState(btn, isInWatchlist(movie.id));
-        btn.onclick = () => saveFromChat(movie, btn);
+        setSaveButtonState(btn, isInWatchlist(uni.id));
+        btn.onclick = () => saveFromChat(uni, btn);
 
         chip.appendChild(label);
         chip.appendChild(btn);
@@ -458,10 +550,10 @@ function setSaveButtonState(btn, saved) {
         : '<i class="bi bi-bookmark-plus"></i> Save for later';
 }
 
-async function saveFromChat(movie, btn) {
-    if (isInWatchlist(movie.id)) return;
+async function saveFromChat(uni, btn) {
+    if (isInWatchlist(uni.id)) return;
     btn.disabled = true;
-    await addToWatchlist(movie);
+    await addToWatchlist(uni);
     setSaveButtonState(btn, true);
     btn.disabled = false;
 }
@@ -484,6 +576,6 @@ function showLoading(show) {
 
 function escapeHtml(text) {
     const div = document.createElement('div');
-    div.textContent = text;
+    div.textContent = text == null ? '' : text;
     return div.innerHTML;
 }

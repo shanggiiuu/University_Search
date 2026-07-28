@@ -6,6 +6,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
+
 import java.util.ArrayList;
 import java.util.List;
 /**
@@ -89,14 +90,21 @@ public class TmdbService {
      * it URL-encodes the value for you, so a search for "Spider-Man 2" or a title
      * containing "&amp;" still works.
      *
-     * <p><b>Step 2:</b> hand the text to {@link #parseMovies(String)} and return
+     * <p><b>Step 2:</b> hand the text to {@link #parseUniversity(String)} and return
      * the result.
      *
      * @param query what the user typed, e.g. "batman"
      */
-    public List<University> searchMovies(String query) {
-        // TODO: call TMDB /search/movie, then return parseMovies(response).
-        throw new UnsupportedOperationException("TmdbService.searchMovies not implemented");
+    public List<University> searchUniversity(String query) {
+        String response = webClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/search")
+                        .queryParam("country", query)
+                        .build())
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
+        return parseUniversity(response);
     }
 
     /**
@@ -105,14 +113,14 @@ public class TmdbService {
      * "Blade Runner 2049" into a real movie the user can save.
      *
      * <h2>TODO — implement</h2>
-     * Reuse {@link #searchMovies(String)}; do not duplicate the HTTP code. Call
+     * Reuse {@link #searchUniversity(String)}; do not duplicate the HTTP code. Call
      * it, then return the first element of the list — or {@code null} when the
      * list is empty. Never call {@code get(0)} without checking first, or you get
      * an {@code IndexOutOfBoundsException}.
      */
     public University searchOne(String title) {
-        // TODO: search for the title and return the first result, or null.
-        throw new UnsupportedOperationException("TmdbService.searchOne not implemented");
+        List<University> movies = searchUniversity(title);
+        return movies.isEmpty() ? null : movies.get(0);
     }
 
     /**
@@ -150,8 +158,38 @@ public class TmdbService {
      *       you will want when debugging.</li>
      * </ol>
      */
-    private List<University> parseMovies(String json) {
-        // TODO: read the "results" array and build one Movie per element.
-        throw new UnsupportedOperationException("TmdbService.parseMovies not implemented");
+    private List<University> parseUniversity(String json) {
+        List<University> universities = new ArrayList<>();
+        try {
+            JsonNode root = objectMapper.readTree(json);
+            if (root != null && root.isArray()) {
+                for (JsonNode node : root) {
+                    University uni = new University();
+
+                    uni.setName(node.has("name") ? node.get("name").asString() : "");
+                    uni.setCountry(node.has("country") ? node.get("country").asString() : "");
+                    uni.setAlphaTwoCode(node.has("alpha_two_code") ? node.get("alpha_two_code").asString() : "");
+                    uni.setStateProvince(node.has("state-province") && !node.get("state-province").isNull()
+                            ? node.get("state-province").asString() : null);
+                    uni.setDomains(toStringList(node.get("domains")));
+                    uni.setWebPages(toStringList(node.get("web_pages")));
+
+                    universities.add(uni);
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to parse Hipolabs response", e);
+        }
+        return universities;
+    }
+
+    private List<String> toStringList(JsonNode node) {
+        List<String> list = new ArrayList<>();
+        if (node != null && node.isArray()) {
+            for (JsonNode n : node) {
+                list.add(n.asText());
+            }
+        }
+        return list;
     }
 }
