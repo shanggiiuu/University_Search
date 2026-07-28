@@ -27,7 +27,7 @@ import java.util.List;
  * the reply text and the recommended titles as separate values.
  */
 @Service
-public class MovieChatService {
+public class UniversityChatService {
 
     /**
      * Which model to use. Different models trade speed against quality; this one
@@ -58,7 +58,7 @@ public class MovieChatService {
      * only write the Authorization header once. Note the required {@code "Bearer "}
      * prefix — a very common source of 401 errors.
      */
-    public MovieChatService(@Value("${groq.api.key}") String apiKey) {
+    public UniversityChatService(@Value("${groq.api.key}") String apiKey) {
         this.apiKey = apiKey;
         // TODO: initialise objectMapper and webClient here.
     }

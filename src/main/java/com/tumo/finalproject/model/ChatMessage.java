@@ -22,6 +22,30 @@ package com.tumo.finalproject.model;
  * <h2>TODO 3 — add a getter and a setter for both fields</h2>
  */
 public class ChatMessage {
+    private String role;
+    private String content;
 
-    // TODO: fields, constructors, getters and setters go here.
+    public ChatMessage() {
+    }
+
+    public ChatMessage(String role, String content) {
+        this.role = role;
+        this.content = content;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
+    }
+
+    public String getContent() {
+        return content;
+    }
+
+    public void setContent(String content) {
+        this.content = content;
+    }
 }

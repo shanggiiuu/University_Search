@@ -1,7 +1,7 @@
 package com.tumo.finalproject.controller;
 
 import com.tumo.finalproject.model.University;
-import com.tumo.finalproject.service.MovieChatService;
+import com.tumo.finalproject.service.UniversityChatService;
 import com.tumo.finalproject.service.TmdbService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -10,6 +10,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Set;
+import java.util.HashSet;
 
 /**
  * The chatbot endpoint: {@code POST /api/chat}.
@@ -21,7 +25,7 @@ import java.util.Map;
  * model what to recommend, then looks each title up on TMDB to get a real, saveable
  * {@link University}.
  *
- * <p>Leave this one until {@link MovieChatService} and {@link TmdbService} both work.
+ * <p>Leave this one until {@link UniversityChatService} and {@link TmdbService} both work.
  *
  * <p>The response shape {@code js/app.js} expects:
  * <pre>
@@ -34,10 +38,10 @@ import java.util.Map;
 @RequestMapping("/api/chat")
 public class ChatController {
 
-    private final MovieChatService movieChatService;
+    private final UniversityChatService movieChatService;
     private final TmdbService tmdbService;
 
-    public ChatController(MovieChatService movieChatService, TmdbService tmdbService) {
+    public ChatController(UniversityChatService movieChatService, TmdbService tmdbService) {
         this.movieChatService = movieChatService;
         this.tmdbService = tmdbService;
     }
@@ -93,7 +97,34 @@ public class ChatController {
      */
     @PostMapping
     public ResponseEntity<Map<String, Object>> chat(@RequestBody Map<String, String> request) {
-        // TODO: validate the message, ask the chat service, resolve titles via TMDB, return both.
-        throw new UnsupportedOperationException("ChatController.chat not implemented");
+        String message = request.get("message");
+        if (message == null || message.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Message is required"));
+        }
+
+        UniversityChatService.ChatResult result = movieChatService.chat(message);
+
+        List<University> recommendations = new ArrayList<>();
+        Set<String> seenKeys = new HashSet<>();
+
+        for (String title : result.titles()) {
+            try {
+                University university = tmdbService.searchOne(title);
+                if (university == null) {
+                    continue;
+                }
+                String key = university.getName() + "|" + university.getCountry();
+                if (seenKeys.add(key)) {
+                    recommendations.add(university);
+                }
+            } catch (Exception ignored) {
+                // one bad title shouldn't break the whole reply
+            }
+        }
+
+        return ResponseEntity.ok(Map.of(
+                "response", result.reply(),
+                "recommendations", recommendations
+        ));
     }
 }

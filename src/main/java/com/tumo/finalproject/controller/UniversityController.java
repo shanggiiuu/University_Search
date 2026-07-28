@@ -3,7 +3,7 @@ package com.tumo.finalproject.controller;
 import com.tumo.finalproject.model.University;
 import com.tumo.finalproject.service.FavoritesService;
 import com.tumo.finalproject.service.TmdbService;
-import com.tumo.finalproject.service.WatchlistService;
+import com.tumo.finalproject.service.ListItemService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -70,7 +70,7 @@ public class UniversityController {
 
     private final TmdbService tmdbService;
     private final FavoritesService favoritesService;
-    private final WatchlistService watchlistService;
+    private final ListItemService listItemService;
 
 
 
@@ -80,10 +80,10 @@ public class UniversityController {
      * {@code final} so they can never be reassigned or left null.
      */
     public UniversityController(TmdbService tmdbService, FavoritesService favoritesService,
-                                WatchlistService watchlistService) {
+                                ListItemService listItemService) {
         this.tmdbService = tmdbService;
         this.favoritesService = favoritesService;
-        this.watchlistService = watchlistService;
+        this.listItemService = listItemService;
     }
 
 
@@ -195,7 +195,7 @@ public class UniversityController {
         if (username == null) {
             return ResponseEntity.status(401).build();
         }
-        return ResponseEntity.ok(watchlistService.getWatchlist(username));
+        return ResponseEntity.ok(listItemService.getWatchlist(username));
         // TODO: require a logged-in user, then return their watchlist.
     }
 
@@ -212,7 +212,7 @@ public class UniversityController {
         if (username == null) {
             return ResponseEntity.status(401).build();
         }
-        return ResponseEntity.ok(watchlistService.addToWatchlist(username, university));
+        return ResponseEntity.ok(listItemService.addToWatchlist(username, university));
         // TODO: require a logged-in user, then add the movie to their watchlist.
     }
 
@@ -229,7 +229,7 @@ public class UniversityController {
         if (username == null) {
             return ResponseEntity.status(401).build();
         }
-        boolean removed = watchlistService.removeFromWatchlist(username, id);
+        boolean removed = listItemService.removeFromWatchlist(username, id);
         return removed ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
     }
 

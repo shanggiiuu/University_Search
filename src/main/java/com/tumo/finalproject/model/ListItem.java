@@ -53,7 +53,7 @@ import jakarta.persistence.Table;
  */
 @Entity
 @Table(name = "watchlist")
-public class WatchlistItem {
+public class ListItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

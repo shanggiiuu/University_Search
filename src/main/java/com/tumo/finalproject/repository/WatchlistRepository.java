@@ -1,10 +1,10 @@
 package com.tumo.finalproject.repository;
 
-import com.tumo.finalproject.model.WatchlistItem;
+import com.tumo.finalproject.model.ListItem;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 /**
- * Database access for {@link WatchlistItem}. The mirror image of
+ * Database access for {@link ListItem}. The mirror image of
  * {@link FavoriteRepository}, pointing at a different entity and table.
  *
  * <h2>TODO — declare these three methods (no bodies, just signatures)</h2>
@@ -18,10 +18,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
  *   long deleteByUsernameAndTmdbId(String username, int tmdbId);
  *       Delete it, returning the number of rows removed (0 = nothing matched).
  * </pre>
- * Add them only after the fields exist in {@link WatchlistItem}, or the app fails
+ * Add them only after the fields exist in {@link ListItem}, or the app fails
  * at startup with "No property 'username' found".
  */
-public interface WatchlistRepository extends JpaRepository<WatchlistItem, Long> {
+public interface WatchlistRepository extends JpaRepository<ListItem, Long> {
 
     // TODO: declare findByUsername, existsByUsernameAndTmdbId and deleteByUsernameAndTmdbId here.
 }

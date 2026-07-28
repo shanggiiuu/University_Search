@@ -9,6 +9,7 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 /**
  * Talks to The Movie Database (TMDB) so our app can search real movies.
  *
@@ -64,6 +65,9 @@ public class TmdbService {
         this.objectMapper = new ObjectMapper();
         this.webClient = WebClient.builder()
                 .baseUrl("http://universities.hipolabs.com")
+                // Some countries (e.g. "United States") return a JSON response well
+                // over WebClient's default 256KB in-memory buffer limit.
+                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(10 * 1024 * 1024))
                 .build();
 
     }
@@ -95,11 +99,34 @@ public class TmdbService {
      *
      * @param query what the user typed, e.g. "batman"
      */
+    /**
+     * A few common country names/abbreviations that don't match Hipolabs' own
+     * country spelling (which is the full official-ish name, e.g. "United States").
+     */
+    private static final Map<String, String> COUNTRY_ALIASES = Map.of(
+            "usa", "United States",
+            "us", "United States",
+            "u.s.a.", "United States",
+            "uk", "United Kingdom"
+    );
+
     public List<University> searchUniversity(String query) {
+        String normalizedCountry = COUNTRY_ALIASES.getOrDefault(query.trim().toLowerCase(), query);
+
+        List<University> byCountry = fetchUniversities("country", normalizedCountry);
+        if (!byCountry.isEmpty()) {
+            return byCountry;
+        }
+        // Not every search is a country — e.g. "Wollongong" or "Waterloo" are
+        // university names, so fall back to Hipolabs' name search before giving up.
+        return fetchUniversities("name", query);
+    }
+
+    private List<University> fetchUniversities(String paramName, String paramValue) {
         String response = webClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/search")
-                        .queryParam("country", query)
+                        .queryParam(paramName, paramValue)
                         .build())
                 .retrieve()
                 .bodyToMono(String.class)

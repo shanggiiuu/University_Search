@@ -287,7 +287,9 @@ async function loadFavorites() {
             showAuthOverlay();
             return;
         }
-        favorites = await res.json();
+        if (!res.ok) throw new Error('Failed to load favorites');
+        const data = await res.json();
+        favorites = Array.isArray(data) ? data : [];
         renderUniversityGrid(favorites, 'favoritesGrid', 'favorites');
         document.getElementById('noFavorites').classList.toggle('d-none', favorites.length > 0);
         // Re-render search results to update bookmark icons
@@ -333,7 +335,9 @@ async function loadWatchlist() {
             showAuthOverlay();
             return;
         }
-        watchlist = await res.json();
+        if (!res.ok) throw new Error('Failed to load watchlist');
+        const data = await res.json();
+        watchlist = Array.isArray(data) ? data : [];
         updateWatchCount();
         renderUniversityGrid(watchlist, 'watchlistGrid', 'watchlist');
         document.getElementById('noWatchlist').classList.toggle('d-none', watchlist.length > 0);
