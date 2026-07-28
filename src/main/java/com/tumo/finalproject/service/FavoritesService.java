@@ -4,6 +4,7 @@ import com.tumo.finalproject.model.FavoriteUniversity;
 import com.tumo.finalproject.model.University;
 import com.tumo.finalproject.repository.FavoriteRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -46,8 +47,9 @@ public class FavoritesService {
      * frontend expects.
      */
     public List<University> getFavorites(String username) {
-        // TODO: load this user's rows and convert each to a Movie.
-        throw new UnsupportedOperationException("FavoritesService.getFavorites not implemented");
+        return favoriteRepository.findByUsername(username).stream()
+                .map(this::toUniversity)
+                .toList();
     }
 
     /**
@@ -67,8 +69,12 @@ public class FavoritesService {
      * <b>idempotent</b>: doing it again changes nothing and still succeeds.
      */
     public University addFavorite(String username, University university) {
-        // TODO: save the movie for this user unless it is already saved, then return it.
-        throw new UnsupportedOperationException("FavoritesService.addFavorite not implemented");
+        boolean alreadySaved = favoriteRepository.existsByUsernameAndUniversityId(
+                username, university.getUniversityId());
+        if (!alreadySaved) {
+            favoriteRepository.save(toEntity(username, university));
+        }
+        return university;
     }
 
     /**
@@ -89,14 +95,13 @@ public class FavoritesService {
      * without it you get an error at runtime. A transaction means the whole
      * operation either completes or is rolled back entirely — never half-done.
      *
-     * @param tmdbId the movie's TMDB id, not the database primary key
+     * @param "tmdbId the movie's TMDB id, not the database primary key
      * @return true if a favorite was actually removed
      */
-    public boolean removeFavorite(String username, int tmdbId) {
-        // TODO: delete the row and report whether anything was removed.
-        throw new UnsupportedOperationException("FavoritesService.removeFavorite not implemented");
+    @Transactional
+    public boolean removeFavorite(String username, int universityId) {
+        return favoriteRepository.deleteByUsernameAndUniversityId(username, universityId) > 0;
     }
-
     /**
      * Database row → API object.
      *
@@ -110,11 +115,15 @@ public class FavoritesService {
      * {@code f.getId()}, which is only meaningful inside our own table. Mixing these
      * two up is the classic bug in this project.
      */
-    private University toMovie(FavoriteUniversity f) {
-        // TODO: convert the entity into a Movie (use getTmdbId() as the Movie id).
-        throw new UnsupportedOperationException("FavoritesService.toMovie not implemented");
+    private University toUniversity(FavoriteUniversity f) {
+        University u = new University();
+        u.setUniversityId(f.getUniversityId());
+        u.setName(f.getName());
+        u.setCountry(f.getCountry());
+        u.setDomains(f.getDomain() != null ? List.of(f.getDomain()) : List.of());
+        u.setWebPages(f.getWebsite() != null ? List.of(f.getWebsite()) : List.of());
+        return u;
     }
-
     /**
      * API object → database row.
      *
@@ -124,8 +133,19 @@ public class FavoritesService {
      * becomes the entity's {@code tmdbId}. You do not set the entity's {@code id}:
      * the database generates it when the row is inserted.
      */
-    private FavoriteUniversity toEntity(String username, University m) {
-        // TODO: convert the Movie into a FavoriteMovie owned by this username.
-        throw new UnsupportedOperationException("FavoritesService.toEntity not implemented");
+    private FavoriteUniversity toEntity(String username, University u) {
+        String domain = (u.getDomains() != null && !u.getDomains().isEmpty())
+                ? u.getDomains().get(0) : null;
+        String website = (u.getWebPages() != null && !u.getWebPages().isEmpty())
+                ? u.getWebPages().get(0) : null;
+
+        return new FavoriteUniversity(
+                username,
+                u.getUniversityId(),
+                u.getName(),
+                u.getCountry(),
+                domain,
+                website
+        );
     }
 }

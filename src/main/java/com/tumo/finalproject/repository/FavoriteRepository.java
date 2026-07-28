@@ -2,6 +2,7 @@ package com.tumo.finalproject.repository;
 
 import com.tumo.finalproject.model.FavoriteUniversity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.List;
 
 /**
  * Database access for {@link FavoriteUniversity}.
@@ -31,5 +32,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
  */
 public interface FavoriteRepository extends JpaRepository<FavoriteUniversity, Long> {
 
-    // TODO: declare findByUsername, existsByUsernameAndTmdbId and deleteByUsernameAndTmdbId here.
+    List<FavoriteUniversity> findByUsername(String username);
+
+    boolean existsByUsernameAndUniversityId(String username, int universityId);
+
+    long deleteByUsernameAndUniversityId(String username, int universityId);
 }

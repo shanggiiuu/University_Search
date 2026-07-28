@@ -5,6 +5,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Column;
+import jakarta.persistence.UniqueConstraint;
 
 /**
  * A university one user has saved to their favorites — one row in the
@@ -58,12 +60,91 @@ import jakarta.persistence.Table;
  * <h2>TODO 5 — add getters and setters for every field, including {@code id}</h2>
  */
 @Entity
-@Table(name = "favorites")
+@Table(name = "favorites",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"username", "universityId"}))
 public class FavoriteUniversity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // TODO: remaining fields, constructors, getters and setters go here.
+    @Column(nullable = false)
+    private String username;
+
+    @Column(nullable = false)
+    private int universityId;
+
+    private String name;
+    private String country;
+    private String domain;
+    private String website;
+
+    public FavoriteUniversity() {
+    }
+
+    public FavoriteUniversity(String username, int universityId, String name,
+                              String country, String domain, String website) {
+        this.username = username;
+        this.universityId = universityId;
+        this.name = name;
+        this.country = country;
+        this.domain = domain;
+        this.website = website;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public int getUniversityId() {
+        return universityId;
+    }
+
+    public void setUniversityId(int universityId) {
+        this.universityId = universityId;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getCountry() {
+        return country;
+    }
+
+    public void setCountry(String country) {
+        this.country = country;
+    }
+
+    public String getDomain() {
+        return domain;
+    }
+
+    public void setDomain(String domain) {
+        this.domain = domain;
+    }
+
+    public String getWebsite() {
+        return website;
+    }
+
+    public void setWebsite(String website) {
+        this.website = website;
+    }
 }

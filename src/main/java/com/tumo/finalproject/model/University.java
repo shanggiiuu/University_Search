@@ -3,6 +3,7 @@ package com.tumo.finalproject.model;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * A university as the API sends it to the browser.
@@ -61,10 +62,12 @@ import java.util.List;
  * missing field in the browser.
  */
 public class University {
+
+    private int universityId;
     private String name;
     private String country;
 
-    @JsonProperty("alpah_two_code")
+    @JsonProperty("alpha_two_code")
     private String alphaTwoCode;
 
     @JsonProperty("state-province")
@@ -78,12 +81,23 @@ public class University {
     public University() {
     }
 
-    public University(String name, String country, String alphaTwoCode, List<String> domains, List<String> webPages) {
+    public University(int universityId, String name, String country, String alphaTwoCode,
+                      String stateProvince, List<String> domains, List<String> webPages) {
+        this.universityId = universityId;
         this.name = name;
         this.country = country;
         this.alphaTwoCode = alphaTwoCode;
+        this.stateProvince = stateProvince;
         this.domains = domains;
         this.webPages = webPages;
+    }
+
+    public int getUniversityId() {
+        return universityId;
+    }
+
+    public void setUniversityId(int universityId) {
+        this.universityId = universityId;
     }
 
     public String getName() {
@@ -132,5 +146,14 @@ public class University {
 
     public void setWebPages(List<String> webPages) {
         this.webPages = webPages;
+    }
+
+    /**
+     * Generates a stable synthetic id from name + country, since Hipolabs
+     * provides none. Same name+country always produces the same id, so
+     * favoriting/un-favoriting keeps working across different searches.
+     */
+    public static int generateId(String name, String country) {
+        return Objects.hash(name, country);
     }
 }
