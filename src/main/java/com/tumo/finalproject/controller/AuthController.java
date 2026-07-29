@@ -137,7 +137,7 @@ public class AuthController {
     @GetMapping("/me")
     public ResponseEntity<?> me(HttpSession session) {
         String username = (String) session.getAttribute("username");
-        if(username != null){
+        if(username == null){
             return ResponseEntity.status(401).build();
         }
         return ResponseEntity.ok(Map.of("username", username));

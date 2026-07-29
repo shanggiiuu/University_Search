@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.key === 'Enter') document.getElementById('authPassword').focus();
     });
 
-    document.getElementById('btnBrowse').classList.add('active');
+    document.getElementById("navUniversities").classList.add("active");
 });
 
 // --- Auth ---
@@ -112,7 +112,7 @@ async function logout() {
     }
     favorites = [];
     currentUniversities = [];
-    document.getElementById('movieGrid').innerHTML = '';
+    document.getElementById('universityGrid').innerHTML = '';
     document.getElementById('favoritesGrid').innerHTML = '';
     updateFavCount();
     renderSavedSidebar();
@@ -136,8 +136,8 @@ function hideAuthError() {
 function showSection(section) {
     document.getElementById('browseSection').classList.toggle('d-none', section !== 'browse');
     document.getElementById('favoritesSection').classList.toggle('d-none', section !== 'favorites');
-    document.getElementById('btnBrowse').classList.toggle('active', section === 'browse');
-    document.getElementById('btnFavorites').classList.toggle('active', section === 'favorites');
+    document.getElementById('navUniversities').classList.toggle('active', section === 'browse');
+    document.getElementById('navFavorites').classList.toggle('active', section === 'favorites');
 
     if (section === 'favorites') {
         loadFavorites();
@@ -160,8 +160,8 @@ async function searchUniversities() {
         if (!res.ok) throw new Error('Search failed');
         currentUniversities = await res.json();
         selectedCountry = '';
-        document.getElementById('countryFilter').value = '';
-        populateCountryFilter(currentUniversities);
+        document.getElementById('countrySelect').value = '';
+        populateCountrySelect(currentUniversities);
         renderResults(query);
     } catch (err) {
         console.error(err);
@@ -176,27 +176,27 @@ function renderResults(query) {
         ? currentUniversities.filter(u => u.country === selectedCountry)
         : currentUniversities;
 
-    renderUniversityGrid(filtered, 'movieGrid');
+    renderUniversityGrid(filtered, 'universityGrid');
     document.getElementById('resultsTitle').textContent =
         filtered.length > 0 ? `Showing ${filtered.length} universities` : '';
     document.getElementById('noResults').classList.toggle('d-none', filtered.length > 0);
 }
 
-function populateCountryFilter(universities) {
-    const select = document.getElementById('countryFilter');
+function populateCountrySelect(universities) {
+    const select = document.getElementById('countrySelect');
     const countries = [...new Set(universities.map(u => u.country).filter(Boolean))].sort();
     select.innerHTML = '<option value="">All Countries</option>' +
         countries.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
 }
 
-function applyFilters() {
-    selectedCountry = document.getElementById('countryFilter').value;
+function onCountrySelect() {
+    selectedCountry = document.getElementById('countrySelect').value;
     renderResults(document.getElementById('searchInput').value.trim());
 }
 
-function clearFilters() {
+function clearAllFilters() {
     selectedCountry = '';
-    document.getElementById('countryFilter').value = '';
+    document.getElementById('countrySelect').value = '';
     renderResults(document.getElementById('searchInput').value.trim());
 }
 
@@ -272,6 +272,7 @@ function isFavorite(universityId) {
 
 function updateFavCount() {
     const badge = document.getElementById('favCount');
+    if (!badge) return;
     if (favorites.length > 0) {
         badge.textContent = favorites.length;
         badge.classList.remove('d-none');
@@ -347,16 +348,16 @@ function openDetail(universityId) {
     selectedUniversity = university;
     const isFav = isFavorite(university.universityId);
     const website = (university.webPages && university.webPages.length > 0) ? university.webPages[0] : null;
-    const domain = (university.domains && university.domains.length > 0) ? university.domains[0] : 'None listed';
-    const flag = flagEmoji(university.alphaTwoCode);
+    const domain = (university.domains && university.domains.length > 0) ? university.domains[0] : null;
 
-    document.getElementById('modalFlag').textContent = flag || '';
-    document.getElementById('modalTitle').textContent = university.name;
-    document.getElementById('modalRating').textContent = university.country || 'Unknown';
-    document.getElementById('modalDate').textContent = domain;
-    document.getElementById('modalOverview').textContent = website
-        ? `Website: ${website}`
-        : 'No website listed.';
+    document.getElementById('modalName').textContent = university.name;
+    document.getElementById('modalCountry').textContent = university.country || 'Unknown';
+    document.getElementById('modalDomain').textContent = domain || 'No website listed';
+    document.getElementById('modalEmail').textContent = domain ? `info@${domain}` : 'Not available';
+
+    const websiteBtn = document.getElementById('modalWebsiteBtn');
+    websiteBtn.href = website || '#';
+    websiteBtn.classList.toggle('d-none', !website);
 
     const favBtn = document.getElementById('modalFavBtn');
     favBtn.innerHTML = isFav
@@ -364,7 +365,7 @@ function openDetail(universityId) {
         : '<i class="bi bi-heart"></i> Add to Favorites';
     favBtn.className = isFav ? 'btn btn-outline-primary btn-lg' : 'btn btn-primary btn-lg';
 
-    new bootstrap.Modal(document.getElementById('movieModal')).show();
+    new bootstrap.Modal(document.getElementById('universityModal')).show();
 }
 
 async function toggleFavoriteFromModal() {
