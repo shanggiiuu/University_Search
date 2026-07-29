@@ -195,6 +195,7 @@ public class TmdbService {
 
                     uni.setName(node.has("name") ? node.get("name").asString() : "");
                     uni.setCountry(node.has("country") ? node.get("country").asString() : "");
+                    uni.setUniversityId(University.generateId(uni.getName(), uni.getCountry()));
                     uni.setAlphaTwoCode(node.has("alpha_two_code") ? node.get("alpha_two_code").asString() : "");
                     uni.setStateProvince(node.has("state-province") && !node.get("state-province").isNull()
                             ? node.get("state-province").asString() : null);

@@ -206,8 +206,8 @@ public class UniversityController {
      * Same as {@link #addFavorite(University, HttpSession)}, calling
      * {@code watchlistService.addToWatchlist(username, university)}.
      */
-    @PostMapping("/watchlist")
-    public ResponseEntity<University> addToWatchlist(@RequestBody University university, HttpSession session) {
+    @PostMapping("/listitem")
+    public ResponseEntity<University> addToListItem(@RequestBody University university, HttpSession session) {
         String username = currentUser(session);
         if (username == null) {
             return ResponseEntity.status(401).build();
@@ -223,7 +223,7 @@ public class UniversityController {
      * Same as {@link #removeFavorite(int, HttpSession)}, calling
      * {@code watchlistService.removeFromWatchlist(username, id)}.
      */
-    @DeleteMapping("/watchlist/{id}")
+    @DeleteMapping("/listitem/{id}")
     public ResponseEntity<Void> removeFromWatchlist(@PathVariable int id, HttpSession session) {
         String username = currentUser(session);
         if (username == null) {

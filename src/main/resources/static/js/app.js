@@ -13,7 +13,7 @@ let watchlist = [];
 let selectedUniversity = null;
 let authMode = 'login'; // 'login' or 'register'
 let currentQuery = '';
-let visibleCount = PAGE_SIZE;
+let currentPage = 1;
 
 // --- Init ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -232,7 +232,7 @@ async function searchUniversities() {
         const res = await fetch(`${API_BASE}/university/search?query=${encodeURIComponent(query)}`);
         if (!res.ok) throw new Error('Search failed');
         currentUniversities = await res.json();
-        visibleCount = PAGE_SIZE;
+        currentPage = 1;
         renderResults(query);
     } catch (err) {
         console.error(err);
@@ -245,6 +245,7 @@ async function searchUniversities() {
 function clearSearch() {
     currentQuery = '';
     currentUniversities = [];
+    currentPage = 1;
     document.getElementById('searchInput').value = '';
     document.getElementById('countrySelect').value = '';
     document.getElementById('universityGrid').innerHTML = '';
@@ -252,7 +253,16 @@ function clearSearch() {
     document.getElementById('resultsTotal').textContent = '';
     document.getElementById('resultsTitle').textContent = 'Search for a country to get started';
     document.getElementById('noResults').classList.add('d-none');
-    document.getElementById('loadMoreWrap').classList.add('d-none');
+    document.getElementById('paginationWrap').classList.add('d-none');
+}
+
+function clearAllFilters() {
+    document.getElementById('majorSelect').value = '';
+    document.getElementById('tuitionSelect').value = '';
+    document.getElementById('acceptanceSelect').value = '';
+    document.getElementById('scholarshipsCheck').checked = true;
+    document.getElementById('englishCheck').checked = true;
+    clearSearch();
 }
 
 function renderResults(query) {
@@ -265,18 +275,58 @@ function renderResults(query) {
              <button onclick="clearSearch()" title="Clear filter">✕</button></span>`
         : '';
     document.getElementById('resultsTotal').innerHTML = hasResults
-        ? `Total Results: <strong>${currentUniversities.length}</strong>`
+        ? `Showing <strong>${currentUniversities.length}</strong> universities`
         : '';
 
-    const visible = currentUniversities.slice(0, visibleCount);
+    const totalPages = Math.max(1, Math.ceil(currentUniversities.length / PAGE_SIZE));
+    if (currentPage > totalPages) currentPage = totalPages;
+    const start = (currentPage - 1) * PAGE_SIZE;
+    const visible = currentUniversities.slice(start, start + PAGE_SIZE);
     renderUniversityGrid(visible, 'universityGrid', 'search');
-    document.getElementById('loadMoreWrap').classList.toggle(
-        'd-none', visibleCount >= currentUniversities.length);
+    renderPagination(currentUniversities.length, totalPages);
 }
 
-function loadMore() {
-    visibleCount += PAGE_SIZE;
+function goToPage(page) {
+    currentPage = page;
     renderResults(currentQuery);
+    document.querySelector('.page-main').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderPagination(total, totalPages) {
+    const wrap = document.getElementById('paginationWrap');
+    if (total === 0 || totalPages <= 1) {
+        wrap.innerHTML = '';
+        wrap.classList.add('d-none');
+        return;
+    }
+    wrap.classList.remove('d-none');
+
+    let html = `<button class="page-btn" ${currentPage === 1 ? 'disabled' : ''}
+        onclick="goToPage(${currentPage - 1})"><i class="bi bi-chevron-left"></i></button>`;
+
+    paginationRange(currentPage, totalPages).forEach(p => {
+        html += p === '...'
+            ? `<span class="page-ellipsis">…</span>`
+            : `<button class="page-btn ${p === currentPage ? 'active' : ''}" onclick="goToPage(${p})">${p}</button>`;
+    });
+
+    html += `<button class="page-btn" ${currentPage === totalPages ? 'disabled' : ''}
+        onclick="goToPage(${currentPage + 1})"><i class="bi bi-chevron-right"></i></button>`;
+
+    wrap.innerHTML = html;
+}
+
+function paginationRange(current, total) {
+    const delta = 1;
+    const range = [];
+    for (let i = Math.max(2, current - delta); i <= Math.min(total - 1, current + delta); i++) {
+        range.push(i);
+    }
+    if (current - delta > 2) range.unshift('...');
+    if (current + delta < total - 1) range.push('...');
+    range.unshift(1);
+    if (total > 1) range.push(total);
+    return range;
 }
 
 // --- Favorites ---
@@ -382,49 +432,119 @@ function updateWatchCount() {
     }
 }
 
+// --- Mock display data ---
+// Rating, acceptance rate, tuition, and subject tags aren't provided by the
+// backend yet. These are deterministic placeholders derived from the
+// university's name/country so a given card always looks the same.
+const TAG_POOL = ['Engineering', 'Business', 'Research', 'Science', 'Technology',
+    'Humanities', 'Arts', 'Medicine', 'Law', 'Computer Science', 'Design', 'Economics'];
+const TAG_COLORS = ['blue', 'green', 'purple', 'orange', 'teal', 'pink'];
+
+function hashString(str) {
+    let h = 0;
+    for (let i = 0; i < str.length; i++) {
+        h = (h * 31 + str.charCodeAt(i)) | 0;
+    }
+    return Math.abs(h);
+}
+
+function uniHash(uni) {
+    return hashString(`${uni.name || ''}|${uni.country || ''}`);
+}
+
+function mockRating(uni) {
+    const h = uniHash(uni);
+    return (3.5 + (h % 16) / 10).toFixed(1);
+}
+
+function mockAcceptanceRate(uni) {
+    const h = uniHash(uni);
+    return 3 + (h % 90);
+}
+
+function mockTuition(uni) {
+    const h = uniHash(uni);
+    return 4000 + (h % 58) * 1000;
+}
+
+function mockTags(uni) {
+    const h = uniHash(uni);
+    const first = h % TAG_POOL.length;
+    const second = (h >> 4) % TAG_POOL.length;
+    const tags = [TAG_POOL[first]];
+    if (second !== first) tags.push(TAG_POOL[second]);
+    return tags;
+}
+
+function tagColorClass(tag) {
+    return TAG_COLORS[hashString(tag) % TAG_COLORS.length];
+}
+
+function cardImageUrl(uni) {
+    return `https://picsum.photos/seed/uni-${uniHash(uni)}/600/400`;
+}
+
+function countryFlag(alphaTwoCode) {
+    if (!alphaTwoCode || alphaTwoCode.length !== 2) return '';
+    return alphaTwoCode.toUpperCase().replace(/./g, ch =>
+        String.fromCodePoint(127397 + ch.charCodeAt(0)));
+}
+
 // --- Rendering ---
 function renderUniversityGrid(universities, containerId, mode) {
     const container = document.getElementById(containerId);
-    container.innerHTML = universities.map((uni, index) => {
-        const domain = (uni.domains && uni.domains[0]) || 'No domain listed';
+    container.innerHTML = universities.map((uni) => {
         const website = (uni.webPages && uni.webPages[0]) || '#';
+        const flag = countryFlag(uni.alphaTwoCode);
+        const rating = mockRating(uni);
+        const acceptanceRate = mockAcceptanceRate(uni);
+        const tuition = mockTuition(uni);
+        const tags = mockTags(uni);
 
-        let bookmarkBtn;
+        let heartBtn;
         if (mode === 'watchlist') {
-            bookmarkBtn = `
-                <button class="bookmark-btn active"
+            heartBtn = `
+                <button class="heart-btn active"
                         onclick="event.stopPropagation(); removeFromWatchlist(${uni.id})"
                         title="Remove from watchlist">
                     <i class="bi bi-bookmark-x-fill"></i>
                 </button>`;
         } else {
             const isFav = isFavorite(uni.id);
-            bookmarkBtn = `
-                <button class="bookmark-btn ${isFav ? 'active' : ''}"
+            heartBtn = `
+                <button class="heart-btn ${isFav ? 'active' : ''}"
                         onclick="event.stopPropagation(); toggleFavorite(${uni.id})"
                         title="${isFav ? 'Remove from favorites' : 'Add to favorites'}">
-                    <i class="bi ${isFav ? 'bi-bookmark-fill' : 'bi-bookmark'}"></i>
+                    <i class="bi ${isFav ? 'bi-heart-fill' : 'bi-heart'}"></i>
                 </button>`;
         }
 
-        const indexLabel = mode === 'search'
-            ? `<span class="uni-index">${String(index + 1).padStart(2, '0')}<span class="brand-star">*</span></span>`
-            : `<span class="uni-index"><i class="bi bi-bank2"></i></span>`;
-
         return `
-            <div class="uni-card" onclick="openDetail(${uni.id})">
-                <div class="uni-card-top">
-                    ${indexLabel}
-                    ${bookmarkBtn}
+            <div class="uni-card-v2" onclick="openDetail(${uni.id})">
+                <div class="uni-card-photo">
+                    <img src="${cardImageUrl(uni)}" alt="" loading="lazy">
+                    ${heartBtn}
                 </div>
-                <div class="uni-name" title="${escapeHtml(uni.name)}">${escapeHtml(uni.name)}</div>
-                <div class="uni-meta-row"><i class="bi bi-geo-alt-fill"></i> ${escapeHtml(uni.country || '')}</div>
-                <div class="uni-meta-row"><i class="bi bi-globe2"></i> ${escapeHtml(domain)}</div>
-                <div class="uni-meta-row"><i class="bi bi-envelope-fill"></i> ${escapeHtml(domain)}</div>
-                <a class="uni-website-link" href="${website}" target="_blank" rel="noopener"
-                   onclick="event.stopPropagation()">
-                    View Website <i class="bi bi-box-arrow-up-right"></i>
-                </a>
+                <div class="uni-card-body">
+                    <div class="uni-name" title="${escapeHtml(uni.name)}">${escapeHtml(uni.name)}</div>
+                    <div class="uni-card-row-split">
+                        <span class="uni-location">${flag} ${escapeHtml(uni.country || '')}</span>
+                        <span class="uni-rating"><i class="bi bi-star-fill"></i> ${rating}</span>
+                    </div>
+                    <div class="uni-stat-row">
+                        <span>Acceptance Rate</span><strong>${acceptanceRate}%</strong>
+                    </div>
+                    <div class="uni-stat-row">
+                        <span>Tuition (per year)</span><strong>$${tuition.toLocaleString()}</strong>
+                    </div>
+                    <div class="uni-tags">
+                        ${tags.map(t => `<span class="tag-pill tag-${tagColorClass(t)}">${t}</span>`).join('')}
+                    </div>
+                    <a class="uni-website-link" href="${website}" target="_blank" rel="noopener"
+                       onclick="event.stopPropagation()">
+                        View Website <i class="bi bi-box-arrow-up-right"></i>
+                    </a>
+                </div>
             </div>
         `;
     }).join('');
@@ -448,8 +568,8 @@ function openDetail(universityId) {
 
     const favBtn = document.getElementById('modalFavBtn');
     favBtn.innerHTML = isFav
-        ? '<i class="bi bi-bookmark-fill"></i> Remove from Favorites'
-        : '<i class="bi bi-bookmark"></i> Save to Favorites';
+        ? '<i class="bi bi-heart-fill"></i> Remove from Favorites'
+        : '<i class="bi bi-heart"></i> Save to Favorites';
 
     new bootstrap.Modal(document.getElementById('universityModal')).show();
 }
@@ -461,8 +581,8 @@ async function toggleFavoriteFromModal() {
     const isFav = isFavorite(selectedUniversity.id);
     const favBtn = document.getElementById('modalFavBtn');
     favBtn.innerHTML = isFav
-        ? '<i class="bi bi-bookmark-fill"></i> Remove from Favorites'
-        : '<i class="bi bi-bookmark"></i> Save to Favorites';
+        ? '<i class="bi bi-heart-fill"></i> Remove from Favorites'
+        : '<i class="bi bi-heart"></i> Save to Favorites';
 }
 
 async function toggleFavorite(universityId) {

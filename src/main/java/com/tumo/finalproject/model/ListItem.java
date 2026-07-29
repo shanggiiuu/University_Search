@@ -1,63 +1,103 @@
 package com.tumo.finalproject.model;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 /**
  * A university one user saved to their "look at later" list — one row in the
  * {@code watchlist} table.
- *
- * <p>This is deliberately almost identical to {@link FavoriteUniversity}: same fields,
- * different table, so the two lists stay independent. Once both work, ask
- * yourself how you would remove the duplication (hint: a shared abstract parent
- * class, or JPA's {@code @MappedSuperclass}) — that is a good stretch goal.
- *
- * <p>Since the Hipolabs API has no id field, store the same synthetic
- * {@code universityId} you invented in {@link University}.
- *
- * <h2>TODO 1 — declare the remaining fields (all private)</h2>
- * <pre>
- *   String username        who saved this university
- *   int    universityId    the synthetic id from {@link University} (not our primary key!)
- *   String name
- *   String country
- *   String domain          the primary domain, e.g. "up.edu.ph" (used for the site and email row)
- *   String website          the primary web page URL, e.g. "http://www.up.edu.ph/"
- * </pre>
- *
- * <h2>TODO 2 — annotate the fields</h2>
- * Import {@code jakarta.persistence.Column} and add:
- * <pre>
- *   &#64;Column(nullable = false)     above username and above universityId
- * </pre>
- *
- * <h2>TODO 3 — make (username, universityId) unique</h2>
- * Import {@code jakarta.persistence.UniqueConstraint} and extend {@code @Table}:
- * <pre>
- *   &#64;Table(name = "watchlist",
- *          uniqueConstraints = &#64;UniqueConstraint(columnNames = {"username", "universityId"}))
- * </pre>
- * Add this only after TODO 1, or Hibernate will fail at startup naming a column
- * that does not exist yet.
- *
- * <h2>TODO 4 — add two constructors</h2>
- * <ul>
- *   <li>A no-argument constructor (required by JPA).</li>
- *   <li>A constructor taking all six fields, in the order listed above.</li>
- * </ul>
- *
- * <h2>TODO 5 — add getters and setters for every field, including {@code id}</h2>
  */
 @Entity
-@Table(name = "watchlist")
+@Table(name = "watchlist",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"username", "universityId"}))
 public class ListItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // TODO: remaining fields, constructors, getters and setters go here.
+    @Column(nullable = false)
+    private String username;
+
+    @Column(nullable = false)
+    private int universityId;
+
+    private String name;
+    private String country;
+    private String domain;
+    private String website;
+
+    public ListItem() {
+    }
+
+    public ListItem(String username, int universityId, String name,
+                    String country, String domain, String website) {
+        this.username = username;
+        this.universityId = universityId;
+        this.name = name;
+        this.country = country;
+        this.domain = domain;
+        this.website = website;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public int getUniversityId() {
+        return universityId;
+    }
+
+    public void setUniversityId(int universityId) {
+        this.universityId = universityId;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getCountry() {
+        return country;
+    }
+
+    public void setCountry(String country) {
+        this.country = country;
+    }
+
+    public String getDomain() {
+        return domain;
+    }
+
+    public void setDomain(String domain) {
+        this.domain = domain;
+    }
+
+    public String getWebsite() {
+        return website;
+    }
+
+    public void setWebsite(String website) {
+        this.website = website;
+    }
 }

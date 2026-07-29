@@ -63,6 +63,7 @@ import java.util.Objects;
  */
 public class University {
 
+    @JsonProperty("id")
     private int universityId;
     private String name;
     private String country;
