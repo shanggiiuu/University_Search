@@ -6,6 +6,9 @@ import org.springframework.web.reactive.function.client.WebClient;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
+import tools.jackson.databind.JsonNode;
 
 /**
  * The AI recommendation chatbot. Sends the user's message to a Large Language
@@ -60,7 +63,13 @@ public class UniversityChatService {
      */
     public UniversityChatService(@Value("${groq.api.key}") String apiKey) {
         this.apiKey = apiKey;
-        // TODO: initialise objectMapper and webClient here.
+        this.objectMapper = new ObjectMapper();
+
+        this.webClient = WebClient.builder()
+                .baseUrl("https://api.groq.com/openai/v1")
+                .defaultHeader("Content-Type", "application/json")
+                .defaultHeader("Authorization", "Bearer " + apiKey)
+                .build();
     }
 
     /**
@@ -140,8 +149,33 @@ public class UniversityChatService {
      * @param userMessage what the user typed in the chat box
      */
     public ChatResult chat(String userMessage) {
-        // TODO: build the system prompt, POST to /chat/completions, return extractResult(...).
-        throw new UnsupportedOperationException("MovieChatService.chat not implemented");
+        String systemPrompt =
+                "You are a friendly university recommendation assistant. Recommend real universities "
+                        + "based on the user's preferences (field of study, country, budget, etc.). Respond ONLY "
+                        + "with a JSON object of this exact shape: "
+                        + "{\"reply\": string, \"universities\": [{\"name\": string, \"country\": string}]}. "
+                        + "'reply' is your friendly, concise message; for each recommendation include its name, "
+                        + "country and a brief reason the user might like it, and end by asking if they'd like to "
+                        + "save any of them. 'universities' lists exactly the universities you recommended in "
+                        + "'reply' (use an empty array if none).";
+
+        Map<String, Object> requestBody = Map.of(
+                "model", MODEL,
+                "messages", List.of(
+                        Map.of("role", "system", "content", systemPrompt),
+                        Map.of("role", "user", "content", userMessage)
+                ),
+                "response_format", Map.of("type", "json_object")
+        );
+
+        String response = webClient.post()
+                .uri("/chat/completions")
+                .bodyValue(requestBody)
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
+
+        return extractResult(response);
     }
 
     /**
@@ -184,7 +218,35 @@ public class UniversityChatService {
      * too many requests right now — please wait a moment and try again."
      */
     private ChatResult extractResult(String json) {
-        // TODO: unwrap choices[0].message.content, then parse that string as JSON.
-        throw new UnsupportedOperationException("MovieChatService.extractResult not implemented");
+        try {
+            JsonNode root = objectMapper.readTree(json);
+
+            JsonNode choices = root.get("choices");
+            if (choices == null || !choices.isArray() || choices.isEmpty()) {
+                return new ChatResult("Sorry, I couldn't generate a response.", List.of());
+            }
+
+            String content = choices.get(0).get("message").get("content").asString();
+            JsonNode parsed = objectMapper.readTree(content);
+
+            String reply = parsed.has("reply") ? parsed.get("reply").asString() : content;
+
+            List<String> titles = new ArrayList<>();
+            JsonNode universities = parsed.get("universities");
+            if (universities != null && universities.isArray()) {
+                for (JsonNode uni : universities) {
+                    if (uni.has("name")) {
+                        String name = uni.get("name").asString();
+                        if (name != null && !name.isBlank()) {
+                            titles.add(name);
+                        }
+                    }
+                }
+            }
+
+            return new ChatResult(reply, titles);
+        } catch (Exception e) {
+            return new ChatResult("Sorry, something went wrong reading the AI's response.", List.of());
+        }
     }
 }

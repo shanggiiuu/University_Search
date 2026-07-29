@@ -1,25 +1,14 @@
 const API_BASE = '/api';
-const PAGE_SIZE = 6;
-
-const COUNTRIES = [
-    'Philippines', 'Japan', 'Singapore', 'Canada', 'USA', 'United Kingdom',
-    'Australia', 'Germany', 'France', 'Armenia', 'India', 'Brazil',
-    'South Korea', 'Italy', 'Spain', 'Mexico', 'China', 'Netherlands'
-];
 
 let currentUniversities = [];
 let favorites = [];
-let watchlist = [];
 let selectedUniversity = null;
 let authMode = 'login'; // 'login' or 'register'
-let currentQuery = '';
-let currentPage = 1;
+let selectedCountry = '';
 
 // --- Init ---
 document.addEventListener('DOMContentLoaded', () => {
     checkAuth();
-    initTheme();
-    populateCountryDropdown();
 
     document.getElementById('searchInput').addEventListener('keydown', (e) => {
         if (e.key === 'Enter') searchUniversities();
@@ -35,56 +24,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('authUsername').addEventListener('keydown', (e) => {
         if (e.key === 'Enter') document.getElementById('authPassword').focus();
     });
+
+    document.getElementById('btnBrowse').classList.add('active');
 });
-
-// --- Theme ---
-function initTheme() {
-    const saved = localStorage.getItem('unisearch-theme');
-    const theme = saved || 'light';
-    applyTheme(theme);
-}
-
-function applyTheme(theme) {
-    if (theme === 'dark') {
-        document.documentElement.setAttribute('data-theme', 'dark');
-        document.getElementById('themeToggle').innerHTML = '<i class="bi bi-sun-fill"></i>';
-    } else {
-        document.documentElement.removeAttribute('data-theme');
-        document.getElementById('themeToggle').innerHTML = '<i class="bi bi-moon-stars-fill"></i>';
-    }
-    localStorage.setItem('unisearch-theme', theme);
-}
-
-function toggleTheme() {
-    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    applyTheme(isDark ? 'light' : 'dark');
-}
-
-// --- Country dropdown ---
-function populateCountryDropdown() {
-    const select = document.getElementById('countrySelect');
-    COUNTRIES.forEach(country => {
-        const opt = document.createElement('option');
-        opt.value = country;
-        opt.textContent = country;
-        select.appendChild(opt);
-    });
-}
-
-function onCountrySelect() {
-    const value = document.getElementById('countrySelect').value;
-    if (value) {
-        document.getElementById('searchInput').value = value;
-        searchUniversities();
-    }
-}
-
-function quickSearch(country) {
-    document.getElementById('searchInput').value = country;
-    document.getElementById('countrySelect').value = country;
-    showSection('browse');
-    searchUniversities();
-}
 
 // --- Auth ---
 async function checkAuth() {
@@ -115,14 +57,13 @@ function onLoggedIn(username) {
     document.getElementById('authPassword').value = '';
     hideAuthError();
     loadFavorites();
-    loadWatchlist();
 }
 
 function toggleAuthMode() {
     authMode = authMode === 'login' ? 'register' : 'login';
     const isLogin = authMode === 'login';
     document.getElementById('authSubtitle').textContent =
-        isLogin ? 'Log in to save your favorite universities' : 'Create an account to save your favorites';
+        isLogin ? 'Log in to see your favorite universities' : 'Create an account to save your favorites';
     document.getElementById('authSubmitBtn').textContent = isLogin ? 'Log In' : 'Sign Up';
     document.getElementById('authTogglePrompt').textContent =
         isLogin ? "Don't have an account?" : 'Already have an account?';
@@ -170,12 +111,11 @@ async function logout() {
         // ignore — clear client state regardless
     }
     favorites = [];
-    watchlist = [];
     currentUniversities = [];
-    document.getElementById('universityGrid').innerHTML = '';
+    document.getElementById('movieGrid').innerHTML = '';
     document.getElementById('favoritesGrid').innerHTML = '';
-    document.getElementById('watchlistGrid').innerHTML = '';
-    updateWatchCount();
+    updateFavCount();
+    renderSavedSidebar();
     authMode = 'login';
     toggleAuthMode();      // reset labels then...
     toggleAuthMode();      // ...back to login state
@@ -193,31 +133,20 @@ function hideAuthError() {
 }
 
 // --- Navigation ---
-function goHome() {
-    showSection('browse');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
 function showSection(section) {
     document.getElementById('browseSection').classList.toggle('d-none', section !== 'browse');
     document.getElementById('favoritesSection').classList.toggle('d-none', section !== 'favorites');
-    document.getElementById('watchlistSection').classList.toggle('d-none', section !== 'watchlist');
-    document.getElementById('aboutSection').classList.toggle('d-none', section !== 'about');
-
-    document.getElementById('navHome').classList.toggle('active', section === 'browse' && !currentQuery);
-    document.getElementById('navUniversities').classList.toggle('active', section === 'browse');
-    document.getElementById('navFavorites').classList.toggle('active', section === 'favorites');
-    document.getElementById('navAbout').classList.toggle('active', section === 'about');
+    document.getElementById('btnBrowse').classList.toggle('active', section === 'browse');
+    document.getElementById('btnFavorites').classList.toggle('active', section === 'favorites');
 
     if (section === 'favorites') {
         loadFavorites();
-    } else if (section === 'watchlist') {
-        loadWatchlist();
     }
+}
 
-    if (section !== 'about') {
-        document.querySelector('.page-main').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+function quickSearch(term) {
+    document.getElementById('searchInput').value = term;
+    searchUniversities();
 }
 
 // --- Search ---
@@ -225,14 +154,14 @@ async function searchUniversities() {
     const query = document.getElementById('searchInput').value.trim();
     if (!query) return;
 
-    currentQuery = query;
-    showSection('browse');
     showLoading(true);
     try {
         const res = await fetch(`${API_BASE}/university/search?query=${encodeURIComponent(query)}`);
         if (!res.ok) throw new Error('Search failed');
         currentUniversities = await res.json();
-        currentPage = 1;
+        selectedCountry = '';
+        document.getElementById('countryFilter').value = '';
+        populateCountryFilter(currentUniversities);
         renderResults(query);
     } catch (err) {
         console.error(err);
@@ -242,91 +171,33 @@ async function searchUniversities() {
     }
 }
 
-function clearSearch() {
-    currentQuery = '';
-    currentUniversities = [];
-    currentPage = 1;
-    document.getElementById('searchInput').value = '';
-    document.getElementById('countrySelect').value = '';
-    document.getElementById('universityGrid').innerHTML = '';
-    document.getElementById('resultsShowing').innerHTML = '';
-    document.getElementById('resultsTotal').textContent = '';
-    document.getElementById('resultsTitle').textContent = 'Search for a country to get started';
-    document.getElementById('noResults').classList.add('d-none');
-    document.getElementById('paginationWrap').classList.add('d-none');
-}
-
-function clearAllFilters() {
-    document.getElementById('majorSelect').value = '';
-    document.getElementById('tuitionSelect').value = '';
-    document.getElementById('acceptanceSelect').value = '';
-    document.getElementById('scholarshipsCheck').checked = true;
-    document.getElementById('englishCheck').checked = true;
-    clearSearch();
-}
-
 function renderResults(query) {
-    const hasResults = currentUniversities.length > 0;
-    document.getElementById('resultsTitle').textContent = hasResults ? '' : '';
-    document.getElementById('noResults').classList.toggle('d-none', hasResults);
+    const filtered = selectedCountry
+        ? currentUniversities.filter(u => u.country === selectedCountry)
+        : currentUniversities;
 
-    document.getElementById('resultsShowing').innerHTML = hasResults
-        ? `Showing results for: <span class="filter-tag">${escapeHtml(query)}
-             <button onclick="clearSearch()" title="Clear filter">✕</button></span>`
-        : '';
-    document.getElementById('resultsTotal').innerHTML = hasResults
-        ? `Showing <strong>${currentUniversities.length}</strong> universities`
-        : '';
-
-    const totalPages = Math.max(1, Math.ceil(currentUniversities.length / PAGE_SIZE));
-    if (currentPage > totalPages) currentPage = totalPages;
-    const start = (currentPage - 1) * PAGE_SIZE;
-    const visible = currentUniversities.slice(start, start + PAGE_SIZE);
-    renderUniversityGrid(visible, 'universityGrid', 'search');
-    renderPagination(currentUniversities.length, totalPages);
+    renderUniversityGrid(filtered, 'movieGrid');
+    document.getElementById('resultsTitle').textContent =
+        filtered.length > 0 ? `Showing ${filtered.length} universities` : '';
+    document.getElementById('noResults').classList.toggle('d-none', filtered.length > 0);
 }
 
-function goToPage(page) {
-    currentPage = page;
-    renderResults(currentQuery);
-    document.querySelector('.page-main').scrollIntoView({ behavior: 'smooth', block: 'start' });
+function populateCountryFilter(universities) {
+    const select = document.getElementById('countryFilter');
+    const countries = [...new Set(universities.map(u => u.country).filter(Boolean))].sort();
+    select.innerHTML = '<option value="">All Countries</option>' +
+        countries.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
 }
 
-function renderPagination(total, totalPages) {
-    const wrap = document.getElementById('paginationWrap');
-    if (total === 0 || totalPages <= 1) {
-        wrap.innerHTML = '';
-        wrap.classList.add('d-none');
-        return;
-    }
-    wrap.classList.remove('d-none');
-
-    let html = `<button class="page-btn" ${currentPage === 1 ? 'disabled' : ''}
-        onclick="goToPage(${currentPage - 1})"><i class="bi bi-chevron-left"></i></button>`;
-
-    paginationRange(currentPage, totalPages).forEach(p => {
-        html += p === '...'
-            ? `<span class="page-ellipsis">…</span>`
-            : `<button class="page-btn ${p === currentPage ? 'active' : ''}" onclick="goToPage(${p})">${p}</button>`;
-    });
-
-    html += `<button class="page-btn" ${currentPage === totalPages ? 'disabled' : ''}
-        onclick="goToPage(${currentPage + 1})"><i class="bi bi-chevron-right"></i></button>`;
-
-    wrap.innerHTML = html;
+function applyFilters() {
+    selectedCountry = document.getElementById('countryFilter').value;
+    renderResults(document.getElementById('searchInput').value.trim());
 }
 
-function paginationRange(current, total) {
-    const delta = 1;
-    const range = [];
-    for (let i = Math.max(2, current - delta); i <= Math.min(total - 1, current + delta); i++) {
-        range.push(i);
-    }
-    if (current - delta > 2) range.unshift('...');
-    if (current + delta < total - 1) range.push('...');
-    range.unshift(1);
-    if (total > 1) range.push(total);
-    return range;
+function clearFilters() {
+    selectedCountry = '';
+    document.getElementById('countryFilter').value = '';
+    renderResults(document.getElementById('searchInput').value.trim());
 }
 
 // --- Favorites ---
@@ -337,213 +208,131 @@ async function loadFavorites() {
             showAuthOverlay();
             return;
         }
-        if (!res.ok) throw new Error('Failed to load favorites');
-        const data = await res.json();
-        favorites = Array.isArray(data) ? data : [];
-        renderUniversityGrid(favorites, 'favoritesGrid', 'favorites');
+        favorites = await res.json();
+        updateFavCount();
+        renderUniversityGrid(favorites, 'favoritesGrid');
         document.getElementById('noFavorites').classList.toggle('d-none', favorites.length > 0);
-        // Re-render search results to update bookmark icons
+        renderSavedSidebar();
         if (currentUniversities.length > 0) {
-            renderResults(currentQuery);
+            renderResults(document.getElementById('searchInput').value.trim());
         }
     } catch (err) {
         console.error('Failed to load favorites', err);
     }
 }
 
+/**
+ * Sends a university to the server to be favorited.
+ *
+ * Returns true only if the server actually confirmed the save (HTTP 2xx).
+ * fetch() does NOT throw on error status codes like 401/400/500 — only on
+ * network failures — so checking res.ok explicitly is what catches a save
+ * that silently failed on the backend (e.g. session expired, bad request).
+ */
 async function addFavorite(university) {
     try {
-        await fetch(`${API_BASE}/university/favorites`, {
+        const res = await fetch(`${API_BASE}/university/favorites`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(university)
         });
+        if (!res.ok) {
+            console.error('Add favorite failed with status', res.status);
+            if (res.status === 401) {
+                showAuthOverlay();
+            }
+            return false;
+        }
         await loadFavorites();
+        return true;
     } catch (err) {
         console.error('Failed to add favorite', err);
+        return false;
     }
 }
 
-async function removeFavorite(id) {
+async function removeFavorite(universityId) {
     try {
-        await fetch(`${API_BASE}/university/favorites/${id}`, { method: 'DELETE' });
+        const res = await fetch(`${API_BASE}/university/favorites/${universityId}`, { method: 'DELETE' });
+        if (!res.ok) {
+            console.error('Remove favorite failed with status', res.status);
+            return false;
+        }
         await loadFavorites();
+        return true;
     } catch (err) {
         console.error('Failed to remove favorite', err);
+        return false;
     }
 }
 
-function isFavorite(id) {
-    return favorites.some(u => u.id === id);
+function isFavorite(universityId) {
+    return favorites.some(u => u.universityId === universityId);
 }
 
-// --- Watchlist (save for later) ---
-async function loadWatchlist() {
-    try {
-        const res = await fetch(`${API_BASE}/university/watchlist`);
-        if (res.status === 401) {
-            showAuthOverlay();
-            return;
-        }
-        if (!res.ok) throw new Error('Failed to load watchlist');
-        const data = await res.json();
-        watchlist = Array.isArray(data) ? data : [];
-        updateWatchCount();
-        renderUniversityGrid(watchlist, 'watchlistGrid', 'watchlist');
-        document.getElementById('noWatchlist').classList.toggle('d-none', watchlist.length > 0);
-    } catch (err) {
-        console.error('Failed to load watchlist', err);
-    }
-}
-
-async function addToWatchlist(university) {
-    try {
-        await fetch(`${API_BASE}/university/watchlist`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(university)
-        });
-        await loadWatchlist();
-    } catch (err) {
-        console.error('Failed to add to watchlist', err);
-    }
-}
-
-async function removeFromWatchlist(id) {
-    try {
-        await fetch(`${API_BASE}/university/watchlist/${id}`, { method: 'DELETE' });
-        await loadWatchlist();
-    } catch (err) {
-        console.error('Failed to remove from watchlist', err);
-    }
-}
-
-function isInWatchlist(id) {
-    return watchlist.some(u => u.id === id);
-}
-
-function updateWatchCount() {
-    const badge = document.getElementById('watchCount');
-    if (watchlist.length > 0) {
-        badge.textContent = watchlist.length;
+function updateFavCount() {
+    const badge = document.getElementById('favCount');
+    if (favorites.length > 0) {
+        badge.textContent = favorites.length;
         badge.classList.remove('d-none');
     } else {
         badge.classList.add('d-none');
     }
 }
 
-// --- Mock display data ---
-// Rating, acceptance rate, tuition, and subject tags aren't provided by the
-// backend yet. These are deterministic placeholders derived from the
-// university's name/country so a given card always looks the same.
-const TAG_POOL = ['Engineering', 'Business', 'Research', 'Science', 'Technology',
-    'Humanities', 'Arts', 'Medicine', 'Law', 'Computer Science', 'Design', 'Economics'];
-const TAG_COLORS = ['blue', 'green', 'purple', 'orange', 'teal', 'pink'];
-
-function hashString(str) {
-    let h = 0;
-    for (let i = 0; i < str.length; i++) {
-        h = (h * 31 + str.charCodeAt(i)) | 0;
+function renderSavedSidebar() {
+    const list = document.getElementById('savedList');
+    if (favorites.length === 0) {
+        list.innerHTML = '<li class="text-muted small px-2 py-3">Nothing saved yet</li>';
+        return;
     }
-    return Math.abs(h);
+    list.innerHTML = favorites.slice(0, 5).map(u => `
+        <li>
+            <div class="saved-thumb"><i class="bi bi-mortarboard"></i></div>
+            <div class="saved-info">
+                <div class="saved-name">${escapeHtml(u.name)}</div>
+                <div class="saved-country">${escapeHtml(u.country || '')}</div>
+            </div>
+            <button class="saved-heart" onclick="removeFavorite(${u.universityId})" title="Remove">
+                <i class="bi bi-heart-fill"></i>
+            </button>
+        </li>
+    `).join('');
 }
 
-function uniHash(uni) {
-    return hashString(`${uni.name || ''}|${uni.country || ''}`);
-}
-
-function mockRating(uni) {
-    const h = uniHash(uni);
-    return (3.5 + (h % 16) / 10).toFixed(1);
-}
-
-function mockAcceptanceRate(uni) {
-    const h = uniHash(uni);
-    return 3 + (h % 90);
-}
-
-function mockTuition(uni) {
-    const h = uniHash(uni);
-    return 4000 + (h % 58) * 1000;
-}
-
-function mockTags(uni) {
-    const h = uniHash(uni);
-    const first = h % TAG_POOL.length;
-    const second = (h >> 4) % TAG_POOL.length;
-    const tags = [TAG_POOL[first]];
-    if (second !== first) tags.push(TAG_POOL[second]);
-    return tags;
-}
-
-function tagColorClass(tag) {
-    return TAG_COLORS[hashString(tag) % TAG_COLORS.length];
-}
-
-function cardImageUrl(uni) {
-    return `https://picsum.photos/seed/uni-${uniHash(uni)}/600/400`;
-}
-
-function countryFlag(alphaTwoCode) {
-    if (!alphaTwoCode || alphaTwoCode.length !== 2) return '';
-    return alphaTwoCode.toUpperCase().replace(/./g, ch =>
-        String.fromCodePoint(127397 + ch.charCodeAt(0)));
+// --- Flag helper ---
+function flagEmoji(alphaTwoCode) {
+    if (!alphaTwoCode || alphaTwoCode.length !== 2) return null;
+    const code = alphaTwoCode.toUpperCase();
+    const codePoints = [...code].map(c => 0x1F1E6 + (c.charCodeAt(0) - 65));
+    return String.fromCodePoint(...codePoints);
 }
 
 // --- Rendering ---
-function renderUniversityGrid(universities, containerId, mode) {
+function renderUniversityGrid(universities, containerId) {
     const container = document.getElementById(containerId);
-    container.innerHTML = universities.map((uni) => {
-        const website = (uni.webPages && uni.webPages[0]) || '#';
-        const flag = countryFlag(uni.alphaTwoCode);
-        const rating = mockRating(uni);
-        const acceptanceRate = mockAcceptanceRate(uni);
-        const tuition = mockTuition(uni);
-        const tags = mockTags(uni);
-
-        let heartBtn;
-        if (mode === 'watchlist') {
-            heartBtn = `
-                <button class="heart-btn active"
-                        onclick="event.stopPropagation(); removeFromWatchlist(${uni.id})"
-                        title="Remove from watchlist">
-                    <i class="bi bi-bookmark-x-fill"></i>
-                </button>`;
-        } else {
-            const isFav = isFavorite(uni.id);
-            heartBtn = `
-                <button class="heart-btn ${isFav ? 'active' : ''}"
-                        onclick="event.stopPropagation(); toggleFavorite(${uni.id})"
-                        title="${isFav ? 'Remove from favorites' : 'Add to favorites'}">
-                    <i class="bi ${isFav ? 'bi-heart-fill' : 'bi-heart'}"></i>
-                </button>`;
-        }
+    container.innerHTML = universities.map(uni => {
+        const flag = flagEmoji(uni.alphaTwoCode);
+        const domain = (uni.domains && uni.domains.length > 0) ? uni.domains[0] : '';
+        const isFav = isFavorite(uni.universityId);
 
         return `
-            <div class="uni-card-v2" onclick="openDetail(${uni.id})">
-                <div class="uni-card-photo">
-                    <img src="${cardImageUrl(uni)}" alt="" loading="lazy">
-                    ${heartBtn}
+            <div class="movie-card" onclick="openDetail(${uni.universityId})">
+                <div class="uni-photo">
+                    <!-- pic for this uni -->
+                    ${flag ? `<span class="uni-flag">${flag}</span>` : `<i class="bi bi-mortarboard"></i>`}
                 </div>
-                <div class="uni-card-body">
-                    <div class="uni-name" title="${escapeHtml(uni.name)}">${escapeHtml(uni.name)}</div>
-                    <div class="uni-card-row-split">
-                        <span class="uni-location">${flag} ${escapeHtml(uni.country || '')}</span>
-                        <span class="uni-rating"><i class="bi bi-star-fill"></i> ${rating}</span>
+                <div class="card-body">
+                    <div class="card-title" title="${escapeHtml(uni.name)}">${escapeHtml(uni.name)}</div>
+                    <div class="card-meta">
+                        <span class="rating-badge"><i class="bi bi-geo-alt-fill"></i> ${escapeHtml(uni.country || 'Unknown')}</span>
+                        <span class="text-muted">${escapeHtml(domain)}</span>
+                        <button class="fav-btn ${isFav ? 'active' : ''}"
+                                onclick="event.stopPropagation(); toggleFavorite(${uni.universityId})"
+                                title="${isFav ? 'Remove from favorites' : 'Add to favorites'}">
+                            <i class="bi ${isFav ? 'bi-heart-fill' : 'bi-heart'}"></i>
+                        </button>
                     </div>
-                    <div class="uni-stat-row">
-                        <span>Acceptance Rate</span><strong>${acceptanceRate}%</strong>
-                    </div>
-                    <div class="uni-stat-row">
-                        <span>Tuition (per year)</span><strong>$${tuition.toLocaleString()}</strong>
-                    </div>
-                    <div class="uni-tags">
-                        ${tags.map(t => `<span class="tag-pill tag-${tagColorClass(t)}">${t}</span>`).join('')}
-                    </div>
-                    <a class="uni-website-link" href="${website}" target="_blank" rel="noopener"
-                       onclick="event.stopPropagation()">
-                        View Website <i class="bi bi-box-arrow-up-right"></i>
-                    </a>
                 </div>
             </div>
         `;
@@ -552,52 +341,56 @@ function renderUniversityGrid(universities, containerId, mode) {
 
 // --- University Detail Modal ---
 function openDetail(universityId) {
-    const uni = findUniversity(universityId);
-    if (!uni) return;
+    const university = findUniversity(universityId);
+    if (!university) return;
 
-    selectedUniversity = uni;
-    const domain = (uni.domains && uni.domains[0]) || 'No domain listed';
-    const website = (uni.webPages && uni.webPages[0]) || '#';
-    const isFav = isFavorite(uni.id);
+    selectedUniversity = university;
+    const isFav = isFavorite(university.universityId);
+    const website = (university.webPages && university.webPages.length > 0) ? university.webPages[0] : null;
+    const domain = (university.domains && university.domains.length > 0) ? university.domains[0] : 'None listed';
+    const flag = flagEmoji(university.alphaTwoCode);
 
-    document.getElementById('modalName').textContent = uni.name;
-    document.getElementById('modalCountry').textContent = uni.country || 'Unknown';
-    document.getElementById('modalDomain').textContent = domain;
-    document.getElementById('modalEmail').textContent = domain;
-    document.getElementById('modalWebsiteBtn').href = website;
+    document.getElementById('modalFlag').textContent = flag || '';
+    document.getElementById('modalTitle').textContent = university.name;
+    document.getElementById('modalRating').textContent = university.country || 'Unknown';
+    document.getElementById('modalDate').textContent = domain;
+    document.getElementById('modalOverview').textContent = website
+        ? `Website: ${website}`
+        : 'No website listed.';
 
     const favBtn = document.getElementById('modalFavBtn');
     favBtn.innerHTML = isFav
         ? '<i class="bi bi-heart-fill"></i> Remove from Favorites'
-        : '<i class="bi bi-heart"></i> Save to Favorites';
+        : '<i class="bi bi-heart"></i> Add to Favorites';
+    favBtn.className = isFav ? 'btn btn-outline-primary btn-lg' : 'btn btn-primary btn-lg';
 
-    new bootstrap.Modal(document.getElementById('universityModal')).show();
+    new bootstrap.Modal(document.getElementById('movieModal')).show();
 }
 
 async function toggleFavoriteFromModal() {
     if (!selectedUniversity) return;
-    await toggleFavorite(selectedUniversity.id);
+    await toggleFavorite(selectedUniversity.universityId);
 
-    const isFav = isFavorite(selectedUniversity.id);
+    const isFav = isFavorite(selectedUniversity.universityId);
     const favBtn = document.getElementById('modalFavBtn');
     favBtn.innerHTML = isFav
         ? '<i class="bi bi-heart-fill"></i> Remove from Favorites'
-        : '<i class="bi bi-heart"></i> Save to Favorites';
+        : '<i class="bi bi-heart"></i> Add to Favorites';
+    favBtn.className = isFav ? 'btn btn-outline-primary btn-lg' : 'btn btn-primary btn-lg';
 }
 
 async function toggleFavorite(universityId) {
     if (isFavorite(universityId)) {
         await removeFavorite(universityId);
     } else {
-        const uni = findUniversity(universityId);
-        if (uni) await addFavorite(uni);
+        const university = findUniversity(universityId);
+        if (university) await addFavorite(university);
     }
 }
 
-function findUniversity(id) {
-    return currentUniversities.find(u => u.id === id)
-        || favorites.find(u => u.id === id)
-        || watchlist.find(u => u.id === id);
+function findUniversity(universityId) {
+    return currentUniversities.find(u => u.universityId === universityId)
+        || favorites.find(u => u.universityId === universityId);
 }
 
 // --- Chat ---
@@ -645,18 +438,20 @@ function appendChatRecommendations(universities) {
     const wrap = document.createElement('div');
     wrap.className = 'chat-recs';
 
-    universities.forEach(uni => {
+    universities.forEach(university => {
         const chip = document.createElement('div');
         chip.className = 'chat-rec';
 
         const label = document.createElement('span');
         label.className = 'chat-rec-title';
-        label.textContent = uni.country ? `${uni.name} (${uni.country})` : uni.name;
+        label.textContent = university.country
+            ? `${university.name} (${university.country})`
+            : university.name;
 
         const btn = document.createElement('button');
         btn.className = 'chat-rec-btn';
-        setSaveButtonState(btn, isInWatchlist(uni.id));
-        btn.onclick = () => saveFromChat(uni, btn);
+        setSaveButtonState(btn, isFavorite(university.universityId));
+        btn.onclick = () => saveFromChat(university, btn);
 
         chip.appendChild(label);
         chip.appendChild(btn);
@@ -671,14 +466,25 @@ function setSaveButtonState(btn, saved) {
     btn.classList.toggle('saved', saved);
     btn.innerHTML = saved
         ? '<i class="bi bi-check-lg"></i> Saved'
-        : '<i class="bi bi-bookmark-plus"></i> Save for later';
+        : '<i class="bi bi-heart"></i> Save to Favorites';
 }
 
-async function saveFromChat(uni, btn) {
-    if (isInWatchlist(uni.id)) return;
+/**
+ * Saves a chat-recommended university to favorites.
+ *
+ * Only flips the button to "Saved" if addFavorite() actually confirmed the
+ * save succeeded — otherwise the button would show "Saved" even when the
+ * request silently failed (e.g. session expired), which is the bug we hit.
+ */
+async function saveFromChat(university, btn) {
+    if (isFavorite(university.universityId)) return;
     btn.disabled = true;
-    await addToWatchlist(uni);
-    setSaveButtonState(btn, true);
+    const success = await addFavorite(university);
+    if (success) {
+        setSaveButtonState(btn, true);
+    } else {
+        alert('Could not save this university. Please make sure you are logged in and try again.');
+    }
     btn.disabled = false;
 }
 
@@ -700,6 +506,6 @@ function showLoading(show) {
 
 function escapeHtml(text) {
     const div = document.createElement('div');
-    div.textContent = text == null ? '' : text;
+    div.textContent = text;
     return div.innerHTML;
 }

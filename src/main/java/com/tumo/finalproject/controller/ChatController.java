@@ -38,11 +38,11 @@ import java.util.HashSet;
 @RequestMapping("/api/chat")
 public class ChatController {
 
-    private final UniversityChatService movieChatService;
+    private final UniversityChatService universityChatService;
     private final TmdbService tmdbService;
 
     public ChatController(UniversityChatService movieChatService, TmdbService tmdbService) {
-        this.movieChatService = movieChatService;
+        this.universityChatService = movieChatService;
         this.tmdbService = tmdbService;
     }
 
@@ -102,10 +102,10 @@ public class ChatController {
             return ResponseEntity.badRequest().body(Map.of("error", "Message is required"));
         }
 
-        UniversityChatService.ChatResult result = movieChatService.chat(message);
+        UniversityChatService.ChatResult result = universityChatService.chat(message);
 
         List<University> recommendations = new ArrayList<>();
-        Set<String> seenKeys = new HashSet<>();
+        Set<Integer> seenIds = new HashSet<>();
 
         for (String title : result.titles()) {
             try {
@@ -113,8 +113,7 @@ public class ChatController {
                 if (university == null) {
                     continue;
                 }
-                String key = university.getName() + "|" + university.getCountry();
-                if (seenKeys.add(key)) {
+                if (seenIds.add(university.getUniversityId())) {
                     recommendations.add(university);
                 }
             } catch (Exception ignored) {

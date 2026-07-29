@@ -3,7 +3,6 @@ package com.tumo.finalproject.controller;
 import com.tumo.finalproject.model.University;
 import com.tumo.finalproject.service.FavoritesService;
 import com.tumo.finalproject.service.TmdbService;
-import com.tumo.finalproject.service.ListItemService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -19,50 +18,7 @@ import java.util.List;
 
 /**
  * HTTP endpoints for searching universities (via the Hipolabs University API,
- * {@code http://universities.hipolabs.com}) and managing the two saved lists.
- *
- * <p>A controller is the front door of the application. Its job is narrow and worth
- * remembering: <b>read the request, check the caller is allowed, delegate the real
- * work to a service, and choose the status code.</b> No business logic and no
- * database access belong here.
- *
- * <p>Two annotations do the wiring:
- * <ul>
- *   <li>{@code @RestController} — every method's return value is converted to JSON
- *       and written to the response body (rather than naming an HTML page).</li>
- *   <li>{@code @RequestMapping("/api/movies")} — a prefix for every path below, so
- *       {@code @GetMapping("/search")} really answers {@code /api/movies/search}.</li>
- * </ul>
- *
- * <p>The method signatures are given to you because {@code js/app.js} already calls
- * these exact URLs — change a path and the frontend breaks. Your job is the bodies.
- *
- * <h2>About {@link HttpSession}</h2>
- * HTTP is stateless: two requests know nothing about each other. A session bridges
- * that. When a user logs in, {@code AuthController} stores their name in the session
- * and the browser gets a cookie holding a session id; on every later request Spring
- * uses that cookie to hand you the same session back. So
- * {@code session.getAttribute("username")} tells you who is calling — and if it is
- * {@code null}, nobody is logged in.
- *
- * <h2>The pattern every method below follows</h2>
- * <pre>
- *   String username = currentUser(session);
- *   if (username == null) {
- *       return ResponseEntity.status(401).build();   // 401 = not authenticated
- *   }
- *   return ResponseEntity.ok(someService.doTheWork(username, ...));
- * </pre>
- * Never trust a username sent in the request body — an attacker could put anyone's
- * name there and read their list. The session is the only trustworthy source.
- *
- * <h2>Status codes you need here</h2>
- * <pre>
- *   200 OK          it worked                    ResponseEntity.ok(body)
- *   400 Bad Request the request was malformed    ResponseEntity.badRequest().build()
- *   401 Unauthorized nobody is logged in         ResponseEntity.status(401).build()
- *   404 Not Found   nothing matched to delete    ResponseEntity.notFound().build()
- * </pre>
+ * {@code http://universities.hipolabs.com}) and managing favorites.
  */
 @RestController
 @RequestMapping("/api/university")
@@ -70,60 +26,20 @@ public class UniversityController {
 
     private final TmdbService tmdbService;
     private final FavoritesService favoritesService;
-    private final ListItemService listItemService;
 
-
-
-    /**
-     * Spring passes in all three services automatically because each is annotated
-     * {@code @Service}. This is <b>constructor injection</b>, and the fields are
-     * {@code final} so they can never be reassigned or left null.
-     */
-    public UniversityController(TmdbService tmdbService, FavoritesService favoritesService,
-                                ListItemService listItemService) {
+    public UniversityController(TmdbService tmdbService, FavoritesService favoritesService) {
         this.tmdbService = tmdbService;
         this.favoritesService = favoritesService;
-        this.listItemService = listItemService;
     }
 
-
-    /**
-     * {@code GET /api/movies/search?query=philippines}
-     *
-     * <p>{@code @RequestParam} pulls the {@code query} value out of the URL's query
-     * string and hands it to you as a String. {@code tmdbService.searchMovies(query)}
-     * is expected to use it as the {@code country} parameter of the real API call,
-     * e.g. {@code http://universities.hipolabs.com/search?country=philippines}
-     * (Hipolabs also supports narrowing by name, e.g.
-     * {@code /search?name=Wollongong&country=australia}, if you want to support
-     * that too).
-     *
-     * <h2>TODO — implement</h2>
-     * <ol>
-     *   <li>If {@code query} is null or blank, return
-     *       {@code ResponseEntity.badRequest().build()} — do not waste an API call on
-     *       an empty search.</li>
-     *   <li>Otherwise return {@code ResponseEntity.ok(tmdbService.searchMovies(query))}.</li>
-     * </ol>
-     * Note that searching does not require login: browsing is open to everyone, only
-     * saving is not.
-     */
     @GetMapping("/search")
     public ResponseEntity<List<University>> searchUniversity(@RequestParam String query) {
-        if(query == null || query.isBlank()){
+        if (query == null || query.isBlank()) {
             return ResponseEntity.badRequest().build();
         }
         return ResponseEntity.ok(tmdbService.searchUniversity(query));
     }
 
-    /**
-     * {@code GET /api/movies/favorites} — the logged-in user's favorites.
-     *
-     * <h2>TODO — implement</h2>
-     * Follow the pattern in the class comment: get the username from the session,
-     * return 401 if it is null, otherwise
-     * {@code ResponseEntity.ok(favoritesService.getFavorites(username))}.
-     */
     @GetMapping("/favorites")
     public ResponseEntity<List<University>> getFavorites(HttpSession session) {
         String username = currentUser(session);
@@ -133,19 +49,6 @@ public class UniversityController {
         return ResponseEntity.ok(favoritesService.getFavorites(username));
     }
 
-    /**
-     * {@code POST /api/movies/favorites} — save a university.
-     *
-     * <p>{@code @RequestBody University university} is where Jackson turns the JSON
-     * the browser sent into a real {@code University} object. If the
-     * {@code @JsonProperty("web_pages")} annotation in {@link University} is missing,
-     * that snake_case field silently arrives as null and your favorites end up with
-     * no website link.
-     *
-     * <h2>TODO — implement</h2>
-     * Require a logged-in user (401 otherwise), then return
-     * {@code ResponseEntity.ok(favoritesService.addFavorite(username, university))}.
-     */
     @PostMapping("/favorites")
     public ResponseEntity<University> addFavorite(@RequestBody University university, HttpSession session) {
         String username = currentUser(session);
@@ -155,23 +58,6 @@ public class UniversityController {
         return ResponseEntity.ok(favoritesService.addFavorite(username, university));
     }
 
-    /**
-     * {@code DELETE /api/movies/favorites/123} — remove a university.
-     *
-     * <p>{@code @PathVariable} captures the {@code {id}} segment from the URL. The
-     * Hipolabs API has no id field of its own, so this is whatever stable id you
-     * chose to expose on {@link University} — it just has to match what your
-     * favorites list was saved and returned with.
-     *
-     * <h2>TODO — implement</h2>
-     * <ol>
-     *   <li>Require a logged-in user, 401 otherwise.</li>
-     *   <li>{@code boolean removed = favoritesService.removeFavorite(username, id);}</li>
-     *   <li>Return {@code ResponseEntity.ok().build()} when {@code removed} is true,
-     *       otherwise {@code ResponseEntity.notFound().build()}. Reporting 404 for
-     *       "there was nothing to delete" is more honest than pretending it worked.</li>
-     * </ol>
-     */
     @DeleteMapping("/favorites/{id}")
     public ResponseEntity<Void> removeFavorite(@PathVariable int id, HttpSession session) {
         String username = currentUser(session);
@@ -180,73 +66,8 @@ public class UniversityController {
         }
         boolean removed = favoritesService.removeFavorite(username, id);
         return removed ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
-        // TODO: require a logged-in user, then delete and return 200 or 404.
     }
 
-    /**
-     * {@code GET /api/movies/watchlist} — the logged-in user's watchlist.
-     *
-     * <h2>TODO — implement</h2>
-     * Same as {@link #getFavorites(HttpSession)}, but using {@code watchlistService}.
-     */
-    @GetMapping("/watchlist")
-    public ResponseEntity<List<University>> getWatchlist(HttpSession session) {
-        String username = currentUser(session);
-        if (username == null) {
-            return ResponseEntity.status(401).build();
-        }
-        return ResponseEntity.ok(listItemService.getWatchlist(username));
-        // TODO: require a logged-in user, then return their watchlist.
-    }
-
-    /**
-     * {@code POST /api/movies/watchlist} — save a university for later.
-     *
-     * <h2>TODO — implement</h2>
-     * Same as {@link #addFavorite(University, HttpSession)}, calling
-     * {@code watchlistService.addToWatchlist(username, university)}.
-     */
-    @PostMapping("/listitem")
-    public ResponseEntity<University> addToListItem(@RequestBody University university, HttpSession session) {
-        String username = currentUser(session);
-        if (username == null) {
-            return ResponseEntity.status(401).build();
-        }
-        return ResponseEntity.ok(listItemService.addToWatchlist(username, university));
-        // TODO: require a logged-in user, then add the movie to their watchlist.
-    }
-
-    /**
-     * {@code DELETE /api/movies/watchlist/123} — take a university off the watchlist.
-     *
-     * <h2>TODO — implement</h2>
-     * Same as {@link #removeFavorite(int, HttpSession)}, calling
-     * {@code watchlistService.removeFromWatchlist(username, id)}.
-     */
-    @DeleteMapping("/listitem/{id}")
-    public ResponseEntity<Void> removeFromWatchlist(@PathVariable int id, HttpSession session) {
-        String username = currentUser(session);
-        if (username == null) {
-            return ResponseEntity.status(401).build();
-        }
-        boolean removed = listItemService.removeFromWatchlist(username, id);
-        return removed ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
-    }
-
-    /**
-     * Who is calling, or {@code null} if nobody is logged in.
-     *
-     * <h2>TODO — implement (do this one first, everything above uses it)</h2>
-     * <pre>
-     *   return (String) session.getAttribute("username");
-     * </pre>
-     * The cast is needed because {@code getAttribute} returns {@code Object} — a
-     * session can hold anything. The string {@code "username"} must match exactly
-     * what {@code AuthController} stores, or every request will look logged out.
-     *
-     * <p>One tiny private helper spares you six copies of the same line, and means
-     * the day you change how login works, you change it in one place.
-     */
     private String currentUser(HttpSession session) {
         return (String) session.getAttribute("username");
     }
