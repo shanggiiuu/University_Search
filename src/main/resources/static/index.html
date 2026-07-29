@@ -7,311 +7,225 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="css/style.css?v=7" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Poppins:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="css/style.css?v=11" rel="stylesheet">
 </head>
 <body>
 
-<!-- Navbar -->
-<header class="site-header">
-    <div class="header-inner">
+<div class="app-shell">
+
+    <!-- Left journal sidebar -->
+    <aside class="app-sidebar">
         <a class="brand" href="#" onclick="goHome(); return false;">
             <span class="brand-logo-icon"><i class="bi bi-mortarboard-fill"></i></span>
-            UniSearch<span class="brand-star">*</span>
+            UniSearch<span class="brand-star">✦</span>
         </a>
 
-        <nav class="main-nav">
-            <a href="#" class="nav-link active" id="navHome" onclick="goHome(); return false;">Home</a>
-            <a href="#" class="nav-link" id="navUniversities" onclick="showSection('browse'); return false;">Universities</a>
-            <a href="#" class="nav-link" onclick="return false;" title="Coming soon">Scholarships</a>
-            <a href="#" class="nav-link" onclick="return false;" title="Coming soon">Compare</a>
-            <a href="#" class="nav-link" id="navAbout" onclick="showSection('about'); return false;">About</a>
+        <nav class="side-nav">
+            <a href="#" class="side-nav-link active" id="navHome" onclick="goHome(); return false;">
+                <i class="bi bi-house-door-fill"></i> Home
+            </a>
+            <a href="#" class="side-nav-link" id="navUniversities" onclick="showSection('browse'); return false;">
+                <i class="bi bi-bank2"></i> Universities
+            </a>
+            <a href="#" class="side-nav-link" id="navSaved" onclick="showSection('favorites'); return false;">
+                <i class="bi bi-heart-fill"></i> Saved
+                <span class="nav-badge d-none" id="favCount">0</span>
+            </a>
+            <a href="#" class="side-nav-link" id="navAbout" onclick="showSection('about'); return false;">
+                <i class="bi bi-info-circle-fill"></i> About
+            </a>
         </nav>
 
-        <div class="header-actions">
-            <button class="saved-link" id="navFavorites" onclick="showSection('favorites')" title="Saved universities">
-                <i class="bi bi-heart"></i> Saved
-            </button>
-            <button class="icon-btn" id="btnWatchlist" onclick="showSection('watchlist')" title="Watch later">
-                <i class="bi bi-bookmark-fill"></i>
-                <span class="icon-badge d-none" id="watchCount">0</span>
-            </button>
-            <button class="icon-btn" id="btnChat" onclick="toggleChat()" title="AI Assistant">
-                <i class="bi bi-stars"></i>
-            </button>
-            <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle dark mode">
-                <i class="bi bi-moon-stars-fill"></i>
-            </button>
-            <div class="dropdown user-area d-none" id="userArea">
-                <button class="avatar-btn" data-bs-toggle="dropdown" title="Account">
-                    <i class="bi bi-person-fill"></i>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li><span class="dropdown-item-text" id="usernameLabel"></span></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><button class="dropdown-item" id="btnLogout" onclick="logout()">
-                        <i class="bi bi-box-arrow-right"></i> Log out
-                    </button></li>
-                </ul>
+        <div class="sidebar-notes">
+            <div class="sticky-note note-yellow rotate-l">
+                Plan your future.<br>Explore the world.<br>Make it yours. <i class="bi bi-heart-fill"></i>
+            </div>
+
+            <div class="quote-card">
+                <p class="quote-label"><i class="bi bi-pin-angle-fill"></i> Today's Inspiration</p>
+                <p class="quote-text">"The future belongs to those who believe in the beauty of their dreams."</p>
+                <p class="quote-author">— Eleanor Roosevelt</p>
             </div>
         </div>
-    </div>
-</header>
+    </aside>
 
-<!-- Auth Overlay (login / register) -->
-<div class="auth-overlay" id="authOverlay">
-    <div class="auth-card">
-        <div class="auth-brand">UniSearch<span class="brand-star">*</span></div>
-        <p class="auth-subtitle" id="authSubtitle">Log in to save your favorite universities</p>
+    <div class="app-main">
 
-        <div class="auth-error d-none" id="authError"></div>
+        <!-- Top bar -->
+        <header class="app-topbar">
+            <div class="topbar-search">
+                <i class="bi bi-search"></i>
+                <input type="text" id="searchInput" placeholder="Search universities by country or name...">
+            </div>
 
-        <div class="mb-3">
-            <input type="text" class="form-control" id="authUsername"
-                   placeholder="Username" autocomplete="username">
+            <div class="topbar-actions">
+                <button class="icon-btn" id="btnChat" onclick="toggleChat()" title="AI Assistant">
+                    <i class="bi bi-stars"></i>
+                </button>
+                <div class="dropdown user-area d-none" id="userArea">
+                    <button class="avatar-btn" data-bs-toggle="dropdown" title="Account">
+                        <i class="bi bi-person-fill"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><span class="dropdown-item-text" id="usernameLabel"></span></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><button class="dropdown-item" id="btnLogout" onclick="logout()">
+                            <i class="bi bi-box-arrow-right"></i> Log out
+                        </button></li>
+                    </ul>
+                </div>
+            </div>
+        </header>
+
+        <!-- Auth Overlay (login / register) -->
+        <div class="auth-overlay" id="authOverlay">
+            <div class="auth-card">
+                <div class="auth-brand">UniSearch<span class="brand-star">✦</span></div>
+                <p class="auth-subtitle" id="authSubtitle">Log in to save your favorite universities</p>
+
+                <div class="auth-error d-none" id="authError"></div>
+
+                <div class="mb-3">
+                    <input type="text" class="form-control" id="authUsername"
+                           placeholder="Username" autocomplete="username">
+                </div>
+                <div class="mb-3">
+                    <input type="password" class="form-control" id="authPassword"
+                           placeholder="Password" autocomplete="current-password">
+                </div>
+
+                <button class="btn btn-primary w-100 mb-2" id="authSubmitBtn" onclick="submitAuth()">
+                    Log In
+                </button>
+
+                <p class="auth-toggle">
+                    <span id="authTogglePrompt">Don't have an account?</span>
+                    <a href="#" id="authToggleLink" onclick="toggleAuthMode(); return false;">Sign up</a>
+                </p>
+            </div>
         </div>
-        <div class="mb-3">
-            <input type="password" class="form-control" id="authPassword"
-                   placeholder="Password" autocomplete="current-password">
-        </div>
 
-        <button class="btn btn-primary w-100 mb-2" id="authSubmitBtn" onclick="submitAuth()">
-            Log In
-        </button>
+        <main class="app-content">
 
-        <p class="auth-toggle">
-            <span id="authTogglePrompt">Don't have an account?</span>
-            <a href="#" id="authToggleLink" onclick="toggleAuthMode(); return false;">Sign up</a>
-        </p>
+            <!-- HOME -->
+            <section id="homeSection" class="page-section">
+                <div class="hero-card">
+                    <div class="hero-copy">
+                        <h1>Find Your <span class="script-accent">Dream</span> University</h1>
+                        <p class="hero-sub">Search real universities worldwide and find the perfect place for your future.</p>
+
+                        <div class="popular-searches">
+                            <span class="popular-label">Top Searches:</span>
+                            <button class="chip" onclick="quickSearch('MIT')">MIT</button>
+                            <button class="chip" onclick="quickSearch('Harvard')">Harvard</button>
+                            <button class="chip" onclick="quickSearch('Stanford')">Stanford</button>
+                            <button class="chip" onclick="quickSearch('National University of Singapore')">NUS</button>
+                            <button class="chip" onclick="quickSearch('Oxford')">Oxford</button>
+                            <button class="chip" onclick="quickSearch('ETH Zurich')">ETH Zurich</button>
+                        </div>
+                    </div>
+
+                    <div class="hero-visual" aria-hidden="true">
+                        <div class="washi washi-blue"></div>
+                        <div class="polaroid">
+                            <div class="polaroid-photo"><img src="https://images.unsplash.com/photo-1583373834259-46cc92173cb7?q=80&w=1074&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="University campus"></div>
+                            <p class="polaroid-caption">Dream Big. Study Hard.</p>
+                        </div>
+                        <div class="sticky-note note-pink corner-note">
+                            Dream Big<br>Study Hard<br>Make it Happen <i class="bi bi-paperclip"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="home-dashboard">
+                    <div class="side-panel">
+                        <div class="side-panel-header">
+                            <h4><i class="bi bi-heart-fill"></i> Saved Universities</h4>
+                        </div>
+                        <ul class="side-list" id="savedList">
+                            <li class="text-muted small px-2 py-3">Nothing saved yet</li>
+                        </ul>
+                        <a href="#" class="side-panel-link" onclick="showSection('favorites'); return false;">
+                            View all saved <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </div>
+
+                    <div class="side-panel ai-panel">
+                        <div class="side-panel-header">
+                            <h4><i class="bi bi-stars"></i> AI Recommendations</h4>
+                            <button class="icon-btn-sm" id="aiRefreshBtn" onclick="loadAiRecommendations()" title="Refresh">
+                                <i class="bi bi-arrow-clockwise"></i>
+                            </button>
+                        </div>
+                        <p class="side-panel-desc" id="aiRecDesc">Log in to get personalized suggestions.</p>
+                        <ul class="side-list side-list-plain" id="aiRecList"></ul>
+                    </div>
+                </div>
+
+                <div class="top-uni-section">
+                    <h4 class="section-title"><i class="bi bi-trophy-fill"></i> Top Universities</h4>
+                    <div class="university-grid" id="topUniGrid"></div>
+                </div>
+            </section>
+
+            <!-- UNIVERSITIES / SEARCH -->
+            <section id="browseSection" class="page-section d-none">
+                <div class="results-col">
+                    <div class="results-header">
+                        <div class="results-showing" id="resultsShowing"></div>
+                        <label class="sort-label">Sort by:
+                            <select class="form-select sort-select" id="sortSelect" onchange="onSortChange()">
+                                <option value="name-asc">Name (A–Z)</option>
+                                <option value="name-desc">Name (Z–A)</option>
+                                <option value="country-asc">Country (A–Z)</option>
+                            </select>
+                        </label>
+                    </div>
+
+                    <h4 class="section-title" id="resultsTitle">Search for a country or university name to get started</h4>
+                    <div class="university-grid" id="universityGrid"></div>
+                    <div class="text-center py-5 d-none" id="noResults">
+                        <i class="bi bi-emoji-frown"></i>
+                        <p>No universities found. Try a different country or name.</p>
+                    </div>
+                    <div class="pagination-controls d-none" id="paginationWrap"></div>
+                </div>
+            </section>
+
+            <!-- SAVED -->
+            <section id="favoritesSection" class="page-section d-none">
+                <h4 class="section-title"><i class="bi bi-heart-fill"></i> My Saved Universities</h4>
+                <div class="university-grid" id="favoritesGrid"></div>
+                <div class="text-center py-5 d-none" id="noFavorites">
+                    <i class="bi bi-heart"></i>
+                    <p>No favorites yet. Search and save some universities!</p>
+                </div>
+            </section>
+
+            <!-- ABOUT -->
+            <section id="aboutSection" class="page-section about-section d-none">
+                <div class="quote-card about-card">
+                    <h2>About UniSearch<span class="brand-star">✦</span></h2>
+                    <p>
+                        UniSearch helps students explore real universities around the world, using open data
+                        from the <a href="https://universities.hipolabs.com" target="_blank" rel="noopener">Hipolabs
+                        University API</a>. Search by country or name, save the schools you're interested in, and
+                        ask the AI assistant for tailored recommendations.
+                    </p>
+                    <p class="text-muted small">Built as a TUMO final project.</p>
+                </div>
+            </section>
+
+        </main>
+
+        <footer class="app-footer">
+            <p class="footer-quote">"The best way to predict your future is to create it." <strong>— Abraham
+                Lincoln</strong></p>
+            <p class="footer-copyright">UniSearch — data via the Hipolabs University API</p>
+        </footer>
     </div>
 </div>
-
-<!-- Hero -->
-<section class="hero" id="heroSection">
-    <div class="hero-inner">
-        <div class="hero-copy">
-            <h1>Find Your <span class="text-accent">Dream University</span></h1>
-            <p class="hero-sub">Search thousands of universities worldwide and find the perfect place for your future.</p>
-
-            <div class="hero-search">
-                <i class="bi bi-search"></i>
-                <input type="text" id="searchInput" placeholder="Search universities, programs, or keywords...">
-                <button class="hero-search-btn" onclick="searchUniversities()">Search</button>
-            </div>
-
-            <div class="popular-searches">
-                <span class="popular-label">Popular searches:</span>
-                <button class="chip" onclick="quickSearch('MIT')">MIT</button>
-                <button class="chip" onclick="quickSearch('Harvard')">Harvard</button>
-                <button class="chip" onclick="quickSearch('Stanford')">Stanford</button>
-                <button class="chip" onclick="quickSearch('National University of Singapore')">NUS</button>
-                <button class="chip" onclick="quickSearch('Oxford')">Oxford</button>
-                <button class="chip" onclick="quickSearch('ETH Zurich')">ETH Zurich</button>
-            </div>
-        </div>
-
-        <div class="hero-photo-wrap" aria-hidden="true">
-            <img src="https://picsum.photos/seed/unisearch-campus/900/700" alt="">
-        </div>
-    </div>
-</section>
-
-<main class="page-main">
-
-    <!-- Browse Section -->
-    <section id="browseSection" class="dashboard-layout">
-        <aside class="filters-panel">
-            <h3><i class="bi bi-funnel-fill"></i> Filters</h3>
-
-            <div class="filter-group">
-                <label class="filter-label">Country</label>
-                <div class="sidebar-select">
-                    <i class="bi bi-globe2"></i>
-                    <select id="countrySelect" onchange="onCountrySelect()">
-                        <option value="">All Countries</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="filter-group">
-                <label class="filter-label">Major</label>
-                <select class="form-select filter-select" id="majorSelect">
-                    <option value="">All Majors</option>
-                    <option>Engineering</option>
-                    <option>Business</option>
-                    <option>Computer Science</option>
-                    <option>Science</option>
-                    <option>Humanities</option>
-                    <option>Medicine</option>
-                    <option>Arts</option>
-                </select>
-            </div>
-
-            <div class="filter-group">
-                <label class="filter-label">Tuition Range</label>
-                <select class="form-select filter-select" id="tuitionSelect">
-                    <option value="">Any</option>
-                    <option>Under $10,000</option>
-                    <option>$10,000 – $30,000</option>
-                    <option>$30,000 – $60,000</option>
-                    <option>$60,000+</option>
-                </select>
-            </div>
-
-            <div class="filter-group">
-                <label class="filter-label">Acceptance Rate</label>
-                <select class="form-select filter-select" id="acceptanceSelect">
-                    <option value="">Any</option>
-                    <option>Under 10%</option>
-                    <option>10% – 30%</option>
-                    <option>30% – 50%</option>
-                    <option>50%+</option>
-                </select>
-            </div>
-
-            <div class="filter-checkboxes">
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="scholarshipsCheck" checked>
-                    <label class="form-check-label" for="scholarshipsCheck">Scholarships Available</label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="englishCheck" checked>
-                    <label class="form-check-label" for="englishCheck">English Programs</label>
-                </div>
-            </div>
-
-            <div class="sidebar-actions">
-                <button class="btn btn-primary w-100" onclick="searchUniversities()">
-                    Apply Filters
-                </button>
-                <button class="btn-clear-all" onclick="clearAllFilters()">Clear all</button>
-            </div>
-        </aside>
-
-        <div class="results-col">
-            <div class="results-header">
-                <div class="results-showing" id="resultsShowing"></div>
-                <div class="results-header-right">
-                    <div class="results-total" id="resultsTotal"></div>
-                    <label class="sort-label">Sort by:
-                        <select class="form-select sort-select">
-                            <option>Popular</option>
-                            <option>Rating</option>
-                            <option>Tuition: Low to High</option>
-                            <option>Acceptance Rate</option>
-                        </select>
-                    </label>
-                </div>
-            </div>
-
-            <h4 class="section-title" id="resultsTitle">Search for a country to get started</h4>
-            <div class="university-grid" id="universityGrid"></div>
-            <div class="text-center py-5 d-none" id="noResults">
-                <i class="bi bi-emoji-frown"></i>
-                <p>No universities found. Try a different country.</p>
-            </div>
-            <div class="pagination-controls d-none" id="paginationWrap"></div>
-        </div>
-
-        <aside class="side-col">
-            <div class="side-panel">
-                <div class="side-panel-header">
-                    <h4>Saved Universities</h4>
-                    <i class="bi bi-heart-fill"></i>
-                </div>
-                <ul class="side-list" id="savedList">
-                    <li class="text-muted small px-2 py-3">Nothing saved yet</li>
-                </ul>
-                <a href="#" class="side-panel-link" onclick="showSection('favorites'); return false;">
-                    View all saved <i class="bi bi-arrow-right"></i>
-                </a>
-            </div>
-
-            <div class="side-panel">
-                <div class="side-panel-header">
-                    <h4><i class="bi bi-lightning-charge-fill"></i> AI Recommendations</h4>
-                </div>
-                <p class="side-panel-desc">
-                    Based on your interests in Computer Science and your budget, you may like these universities.
-                </p>
-                <ul class="side-list side-list-plain">
-                    <li>
-                        <img src="https://picsum.photos/seed/waterloo-rec/80/80" alt="">
-                        <div><strong>University of Waterloo</strong><span>Canada</span></div>
-                        <i class="bi bi-chevron-right"></i>
-                    </li>
-                    <li>
-                        <img src="https://picsum.photos/seed/cmu-rec/80/80" alt="">
-                        <div><strong>Carnegie Mellon University</strong><span>USA</span></div>
-                        <i class="bi bi-chevron-right"></i>
-                    </li>
-                    <li>
-                        <img src="https://picsum.photos/seed/kaist-rec/80/80" alt="">
-                        <div><strong>KAIST</strong><span>South Korea</span></div>
-                        <i class="bi bi-chevron-right"></i>
-                    </li>
-                </ul>
-            </div>
-        </aside>
-    </section>
-
-    <!-- Favorites Section -->
-    <section id="favoritesSection" class="container-fluid px-0 d-none">
-        <h4 class="section-title"><i class="bi bi-heart-fill"></i> My Favorites</h4>
-        <div class="university-grid" id="favoritesGrid"></div>
-        <div class="text-center py-5 d-none" id="noFavorites">
-            <i class="bi bi-heart"></i>
-            <p>No favorites yet. Search and save some universities!</p>
-        </div>
-    </section>
-
-    <!-- Watchlist Section -->
-    <section id="watchlistSection" class="container-fluid px-0 d-none">
-        <h4 class="section-title"><i class="bi bi-bookmark-fill"></i> Watch Later</h4>
-        <div class="university-grid" id="watchlistGrid"></div>
-        <div class="text-center py-5 d-none" id="noWatchlist">
-            <i class="bi bi-bookmark"></i>
-            <p>Nothing saved yet. Ask the AI Assistant for recommendations and save them for later!</p>
-        </div>
-    </section>
-
-    <!-- About Section -->
-    <section id="aboutSection" class="about-section d-none">
-        <h2>About UniSearch<span class="brand-star">*</span></h2>
-        <p>
-            UniSearch helps students explore over 9,000 universities across 180+ countries,
-            using open data from the Hipolabs University API. Search by country, save the
-            schools you're interested in, and ask the AI assistant for tailored recommendations.
-        </p>
-    </section>
-
-    <!-- Stats bar -->
-    <div class="site-stats-wrap">
-        <div class="site-stats-bar">
-            <div class="stat">
-                <i class="bi bi-globe2"></i>
-                <div><strong>5,000+</strong><span>Universities</span></div>
-            </div>
-            <div class="stat">
-                <i class="bi bi-mortarboard"></i>
-                <div><strong>100+</strong><span>Countries</span></div>
-            </div>
-            <div class="stat">
-                <i class="bi bi-journal-bookmark"></i>
-                <div><strong>10,000+</strong><span>Programs</span></div>
-            </div>
-            <div class="stat">
-                <i class="bi bi-trophy"></i>
-                <div><strong>1M+</strong><span>Students Helped</span></div>
-            </div>
-            <div class="stat-quote">
-                "The best way to predict your future is to create it."
-                <strong>— Abraham Lincoln</strong>
-            </div>
-        </div>
-    </div>
-
-</main>
 
 <!-- University Detail Modal -->
 <div class="modal fade" id="universityModal" tabindex="-1">
@@ -320,7 +234,7 @@
             <button type="button" class="btn-close modal-close-btn" data-bs-dismiss="modal"></button>
             <div class="modal-body">
                 <div class="university-detail">
-                    <div class="university-detail-icon"><i class="bi bi-bank2"></i></div>
+                    <div class="university-detail-photo" id="modalPhoto"><i class="bi bi-bank2"></i></div>
                     <h2 id="modalName"></h2>
                     <div class="university-meta">
                         <span><i class="bi bi-geo-alt-fill"></i> <span id="modalCountry"></span></span>
@@ -347,7 +261,8 @@
     </div>
     <div class="chat-messages" id="chatMessages">
         <div class="chat-msg bot">
-            <p>Hi! I'm your university recommendation assistant. Tell me what you're looking for — country, field of study, budget — and I'll suggest some great options!</p>
+            <p>Hi! I'm your university recommendation assistant. Tell me what you're looking for — country, field
+                of study, budget — and I'll suggest some great options!</p>
         </div>
     </div>
     <div class="chat-input">
@@ -361,48 +276,6 @@
     </div>
 </div>
 
-<!-- Footer -->
-<footer class="site-footer">
-    <div class="footer-inner">
-        <div class="footer-brand">
-            <div class="brand">UniSearch<span class="brand-star">*</span></div>
-            <p>Find universities. Build your future.</p>
-        </div>
-
-        <div class="footer-col">
-            <h6>Navigation</h6>
-            <a href="#" onclick="goHome(); return false;">Home</a>
-            <a href="#" onclick="showSection('browse'); return false;">Universities</a>
-            <a href="#" onclick="showSection('favorites'); return false;">Favorites</a>
-            <a href="#" onclick="showSection('about'); return false;">About</a>
-        </div>
-
-        <div class="footer-col">
-            <h6>Resources</h6>
-            <a href="https://universities.hipolabs.com" target="_blank" rel="noopener">About API</a>
-            <a href="https://github.com" target="_blank" rel="noopener">GitHub</a>
-            <a href="#" onclick="showSection('about'); return false;">Contact</a>
-        </div>
-
-        <div class="footer-col">
-            <h6>Connect</h6>
-            <p class="footer-tagline">Let's build the future together.</p>
-            <div class="footer-social">
-                <a href="https://github.com" target="_blank" rel="noopener"><i class="bi bi-github"></i></a>
-                <a href="mailto:hello@unisearch.app"><i class="bi bi-envelope-fill"></i></a>
-                <a href="#"><i class="bi bi-globe2"></i></a>
-            </div>
-        </div>
-
-        <div class="footer-badge">
-            <div class="badge-circle">
-                <span>Dream.<br>Search.<br>Achieve.</span>
-            </div>
-        </div>
-    </div>
-    <p class="footer-copyright">© 2023-2025 UniSearch Project :)</p>
-</footer>
-
 <!-- Loading Spinner -->
 <div class="loading-overlay d-none" id="loadingOverlay">
     <div class="spinner-border" role="status">
@@ -411,6 +284,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="js/app.js?v=7"></script>
+<script src="js/app.js?v=11"></script>
 </body>
 </html>

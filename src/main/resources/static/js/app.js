@@ -2,13 +2,20 @@ const API_BASE = '/api';
 
 let currentUniversities = [];
 let favorites = [];
+let topUniversities = [];
+let hasSearched = false;
 let selectedUniversity = null;
 let authMode = 'login'; // 'login' or 'register'
-let selectedCountry = '';
+let sortMode = 'name-asc';
+let currentPage = 1;
+let lastSortedList = [];
+const PAGE_SIZE = 9;
+const imageCache = new Map(); // universityId -> imageUrl | null
 
 // --- Init ---
 document.addEventListener('DOMContentLoaded', () => {
     checkAuth();
+    loadTopUniversities();
 
     document.getElementById('searchInput').addEventListener('keydown', (e) => {
         if (e.key === 'Enter') searchUniversities();
@@ -24,8 +31,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('authUsername').addEventListener('keydown', (e) => {
         if (e.key === 'Enter') document.getElementById('authPassword').focus();
     });
-
-    document.getElementById("navUniversities").classList.add("active");
 });
 
 // --- Auth ---
@@ -57,6 +62,7 @@ function onLoggedIn(username) {
     document.getElementById('authPassword').value = '';
     hideAuthError();
     loadFavorites();
+    loadAiRecommendations();
 }
 
 function toggleAuthMode() {
@@ -114,11 +120,14 @@ async function logout() {
     currentUniversities = [];
     document.getElementById('universityGrid').innerHTML = '';
     document.getElementById('favoritesGrid').innerHTML = '';
+    document.getElementById('aiRecList').innerHTML = '';
+    document.getElementById('aiRecDesc').textContent = 'Log in to get personalized suggestions.';
     updateFavCount();
     renderSavedSidebar();
     authMode = 'login';
     toggleAuthMode();      // reset labels then...
     toggleAuthMode();      // ...back to login state
+    goHome();
     showAuthOverlay();
 }
 
@@ -134,14 +143,27 @@ function hideAuthError() {
 
 // --- Navigation ---
 function showSection(section) {
+    document.getElementById('homeSection').classList.toggle('d-none', section !== 'home');
     document.getElementById('browseSection').classList.toggle('d-none', section !== 'browse');
     document.getElementById('favoritesSection').classList.toggle('d-none', section !== 'favorites');
+    document.getElementById('aboutSection').classList.toggle('d-none', section !== 'about');
+
+    document.getElementById('navHome').classList.toggle('active', section === 'home');
     document.getElementById('navUniversities').classList.toggle('active', section === 'browse');
-    document.getElementById('navFavorites').classList.toggle('active', section === 'favorites');
+    document.getElementById('navSaved').classList.toggle('active', section === 'favorites');
+    document.getElementById('navAbout').classList.toggle('active', section === 'about');
 
     if (section === 'favorites') {
         loadFavorites();
     }
+    if (section === 'browse' && !hasSearched) {
+        renderTopUniversitiesInBrowse();
+    }
+    window.scrollTo({ top: 0, behavior: 'instant' });
+}
+
+function goHome() {
+    showSection('home');
 }
 
 function quickSearch(term) {
@@ -154,14 +176,14 @@ async function searchUniversities() {
     const query = document.getElementById('searchInput').value.trim();
     if (!query) return;
 
+    showSection('browse');
+    hasSearched = true;
+    currentPage = 1;
     showLoading(true);
     try {
         const res = await fetch(`${API_BASE}/university/search?query=${encodeURIComponent(query)}`);
         if (!res.ok) throw new Error('Search failed');
         currentUniversities = await res.json();
-        selectedCountry = '';
-        document.getElementById('countrySelect').value = '';
-        populateCountrySelect(currentUniversities);
         renderResults(query);
     } catch (err) {
         console.error(err);
@@ -172,32 +194,100 @@ async function searchUniversities() {
 }
 
 function renderResults(query) {
-    const filtered = selectedCountry
-        ? currentUniversities.filter(u => u.country === selectedCountry)
-        : currentUniversities;
+    const sorted = sortUniversities(currentUniversities);
 
-    renderUniversityGrid(filtered, 'universityGrid');
     document.getElementById('resultsTitle').textContent =
-        filtered.length > 0 ? `Showing ${filtered.length} universities` : '';
-    document.getElementById('noResults').classList.toggle('d-none', filtered.length > 0);
+        currentUniversities.length > 0 ? '' : 'Search for a country or university name to get started';
+    document.getElementById('resultsShowing').textContent =
+        sorted.length > 0 ? `Showing ${sorted.length} universit${sorted.length === 1 ? 'y' : 'ies'}` : '';
+    document.getElementById('noResults').classList.toggle('d-none', sorted.length > 0 || currentUniversities.length === 0);
+
+    renderPage(sorted);
 }
 
-function populateCountrySelect(universities) {
-    const select = document.getElementById('countrySelect');
-    const countries = [...new Set(universities.map(u => u.country).filter(Boolean))].sort();
-    select.innerHTML = '<option value="">All Countries</option>' +
-        countries.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+function sortUniversities(list) {
+    const sorted = [...list];
+    switch (sortMode) {
+        case 'name-desc':
+            sorted.sort((a, b) => (b.name || '').localeCompare(a.name || ''));
+            break;
+        case 'country-asc':
+            sorted.sort((a, b) => (a.country || '').localeCompare(b.country || ''));
+            break;
+        default:
+            sorted.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    }
+    return sorted;
 }
 
-function onCountrySelect() {
-    selectedCountry = document.getElementById('countrySelect').value;
+function renderPage(sorted) {
+    lastSortedList = sorted;
+    const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+    if (currentPage > totalPages) currentPage = totalPages;
+    const start = (currentPage - 1) * PAGE_SIZE;
+    const pageItems = sorted.slice(start, start + PAGE_SIZE);
+    renderUniversityGrid(pageItems, 'universityGrid');
+    renderPagination(totalPages);
+}
+
+function renderPagination(totalPages) {
+    const wrap = document.getElementById('paginationWrap');
+    if (totalPages <= 1) {
+        wrap.classList.add('d-none');
+        wrap.innerHTML = '';
+        return;
+    }
+    wrap.classList.remove('d-none');
+    let html = `<button class="page-btn" onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}><i class="bi bi-chevron-left"></i></button>`;
+
+    for (let p = 1; p <= totalPages; p++) {
+        const nearEdge = p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1;
+        if (nearEdge) {
+            html += `<button class="page-btn ${p === currentPage ? 'active' : ''}" onclick="goToPage(${p})">${p}</button>`;
+        } else if (p === 2 || p === totalPages - 1) {
+            html += `<span class="page-ellipsis">…</span>`;
+        }
+    }
+
+    html += `<button class="page-btn" onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}><i class="bi bi-chevron-right"></i></button>`;
+    wrap.innerHTML = html;
+}
+
+function goToPage(p) {
+    currentPage = p;
+    renderPage(lastSortedList);
+    document.getElementById('browseSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function onSortChange() {
+    sortMode = document.getElementById('sortSelect').value;
+    currentPage = 1;
     renderResults(document.getElementById('searchInput').value.trim());
 }
 
-function clearAllFilters() {
-    selectedCountry = '';
-    document.getElementById('countrySelect').value = '';
-    renderResults(document.getElementById('searchInput').value.trim());
+// --- Top Universities (curated spotlight for home + default browse view) ---
+async function loadTopUniversities() {
+    try {
+        const res = await fetch(`${API_BASE}/university/top`);
+        if (!res.ok) throw new Error('Failed to load top universities');
+        topUniversities = await res.json();
+        renderUniversityGrid(topUniversities, 'topUniGrid');
+        if (!hasSearched) {
+            renderTopUniversitiesInBrowse();
+        }
+    } catch (err) {
+        console.error('Failed to load top universities', err);
+    }
+}
+
+function renderTopUniversitiesInBrowse() {
+    document.getElementById('resultsTitle').textContent = 'Top Universities';
+    document.getElementById('resultsShowing').textContent = topUniversities.length > 0
+        ? `Showing ${topUniversities.length} top pick${topUniversities.length === 1 ? '' : 's'}`
+        : '';
+    document.getElementById('noResults').classList.add('d-none');
+    document.getElementById('paginationWrap').classList.add('d-none');
+    renderUniversityGrid(topUniversities, 'universityGrid');
 }
 
 // --- Favorites ---
@@ -215,6 +305,12 @@ async function loadFavorites() {
         renderSavedSidebar();
         if (currentUniversities.length > 0) {
             renderResults(document.getElementById('searchInput').value.trim());
+        }
+        if (topUniversities.length > 0) {
+            renderUniversityGrid(topUniversities, 'topUniGrid');
+            if (!hasSearched) {
+                renderUniversityGrid(topUniversities, 'universityGrid');
+            }
         }
     } catch (err) {
         console.error('Failed to load favorites', err);
@@ -301,12 +397,122 @@ function renderSavedSidebar() {
     `).join('');
 }
 
+// --- AI Recommendations (home dashboard panel) ---
+async function loadAiRecommendations() {
+    const list = document.getElementById('aiRecList');
+    const desc = document.getElementById('aiRecDesc');
+    desc.textContent = 'Thinking of good options for you...';
+    list.innerHTML = '<li class="ai-loading">Asking the assistant...</li>';
+
+    const message = favorites.length > 0
+        ? `Suggest 3 real universities I might like, similar in spirit to my saved favorites: ${favorites.slice(0, 5).map(u => `${u.name} (${u.country})`).join(', ')}. Keep your reply to one short sentence.`
+        : `Suggest 3 well-regarded real universities from different countries for someone just starting to explore their options. Keep your reply to one short sentence.`;
+
+    try {
+        const res = await fetch(`${API_BASE}/chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message })
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+            desc.textContent = data.error || "Couldn't load recommendations right now.";
+            list.innerHTML = '';
+            return;
+        }
+
+        desc.textContent = data.response || 'Here are a few universities you might like.';
+        const recs = Array.isArray(data.recommendations) ? data.recommendations : [];
+
+        if (recs.length === 0) {
+            list.innerHTML = '<li class="text-muted small">No suggestions right now — try the chat assistant for more.</li>';
+            return;
+        }
+
+        list.innerHTML = '';
+        recs.forEach(u => list.appendChild(buildAiRecItem(u)));
+    } catch (err) {
+        console.error('Failed to load AI recommendations', err);
+        desc.textContent = "Couldn't load recommendations right now.";
+        list.innerHTML = '';
+    }
+}
+
+function buildAiRecItem(university) {
+    const li = document.createElement('li');
+    const saved = isFavorite(university.universityId);
+
+    const icon = document.createElement('div');
+    icon.className = 'ai-rec-icon';
+    icon.innerHTML = '<i class="bi bi-mortarboard"></i>';
+
+    const info = document.createElement('div');
+    info.className = 'ai-rec-info';
+    const strong = document.createElement('strong');
+    strong.textContent = university.name;
+    const span = document.createElement('span');
+    span.textContent = university.country || '';
+    info.appendChild(strong);
+    info.appendChild(span);
+
+    const btn = document.createElement('button');
+    btn.className = 'ai-rec-btn' + (saved ? ' saved' : '');
+    btn.title = saved ? 'Saved' : 'Save to favorites';
+    btn.innerHTML = saved ? '<i class="bi bi-check-lg"></i>' : '<i class="bi bi-heart"></i>';
+    btn.onclick = async () => {
+        if (isFavorite(university.universityId)) return;
+        btn.disabled = true;
+        const ok = await addFavorite(university);
+        if (ok) {
+            btn.classList.add('saved');
+            btn.title = 'Saved';
+            btn.innerHTML = '<i class="bi bi-check-lg"></i>';
+        }
+        btn.disabled = false;
+    };
+
+    li.appendChild(icon);
+    li.appendChild(info);
+    li.appendChild(btn);
+    return li;
+}
+
 // --- Flag helper ---
 function flagEmoji(alphaTwoCode) {
     if (!alphaTwoCode || alphaTwoCode.length !== 2) return null;
     const code = alphaTwoCode.toUpperCase();
     const codePoints = [...code].map(c => 0x1F1E6 + (c.charCodeAt(0) - 65));
     return String.fromCodePoint(...codePoints);
+}
+
+// --- Campus photos (fetched on demand, per university, and cached) ---
+async function loadCampusImage(uni) {
+    if (imageCache.has(uni.universityId)) return imageCache.get(uni.universityId);
+    try {
+        const res = await fetch(`${API_BASE}/university/image?name=${encodeURIComponent(uni.name)}`);
+        const data = res.ok ? await res.json() : {};
+        imageCache.set(uni.universityId, data.imageUrl || null);
+        return data.imageUrl || null;
+    } catch {
+        imageCache.set(uni.universityId, null);
+        return null;
+    }
+}
+
+function applyCampusImage(uni, containerId, imageUrl) {
+    if (!imageUrl) return;
+    const card = document.querySelector(`#${containerId} .uni-card[data-uni-id="${uni.universityId}"]`);
+    const photo = card && card.querySelector('.uni-photo');
+    if (photo && !photo.querySelector('.uni-photo-img')) {
+        const img = document.createElement('img');
+        img.className = 'uni-photo-img';
+        img.alt = uni.name;
+        img.loading = 'lazy';
+        img.onerror = () => img.remove();
+        img.src = imageUrl;
+        photo.appendChild(img);
+    }
 }
 
 // --- Rendering ---
@@ -316,28 +522,33 @@ function renderUniversityGrid(universities, containerId) {
         const flag = flagEmoji(uni.alphaTwoCode);
         const domain = (uni.domains && uni.domains.length > 0) ? uni.domains[0] : '';
         const isFav = isFavorite(uni.universityId);
+        const knownImage = uni.imageUrl || imageCache.get(uni.universityId);
 
         return `
-            <div class="movie-card" onclick="openDetail(${uni.universityId})">
+            <div class="uni-card" data-uni-id="${uni.universityId}" onclick="openDetail(${uni.universityId})">
                 <div class="uni-photo">
-                    <!-- pic for this uni -->
                     ${flag ? `<span class="uni-flag">${flag}</span>` : `<i class="bi bi-mortarboard"></i>`}
+                    ${knownImage ? `<img class="uni-photo-img" src="${escapeHtml(knownImage)}" alt="${escapeHtml(uni.name)}" loading="lazy" onerror="this.remove()">` : ''}
+                    <button class="fav-btn ${isFav ? 'active' : ''}"
+                            onclick="event.stopPropagation(); toggleFavorite(${uni.universityId})"
+                            title="${isFav ? 'Remove from favorites' : 'Add to favorites'}">
+                        <i class="bi ${isFav ? 'bi-heart-fill' : 'bi-heart'}"></i>
+                    </button>
                 </div>
                 <div class="card-body">
                     <div class="card-title" title="${escapeHtml(uni.name)}">${escapeHtml(uni.name)}</div>
                     <div class="card-meta">
                         <span class="rating-badge"><i class="bi bi-geo-alt-fill"></i> ${escapeHtml(uni.country || 'Unknown')}</span>
                         <span class="text-muted">${escapeHtml(domain)}</span>
-                        <button class="fav-btn ${isFav ? 'active' : ''}"
-                                onclick="event.stopPropagation(); toggleFavorite(${uni.universityId})"
-                                title="${isFav ? 'Remove from favorites' : 'Add to favorites'}">
-                            <i class="bi ${isFav ? 'bi-heart-fill' : 'bi-heart'}"></i>
-                        </button>
                     </div>
                 </div>
             </div>
         `;
     }).join('');
+
+    universities
+        .filter(uni => !uni.imageUrl && !imageCache.has(uni.universityId))
+        .forEach(uni => loadCampusImage(uni).then(url => applyCampusImage(uni, containerId, url)));
 }
 
 // --- University Detail Modal ---
@@ -354,6 +565,23 @@ function openDetail(universityId) {
     document.getElementById('modalCountry').textContent = university.country || 'Unknown';
     document.getElementById('modalDomain').textContent = domain || 'No website listed';
     document.getElementById('modalEmail').textContent = domain ? `info@${domain}` : 'Not available';
+
+    const modalPhoto = document.getElementById('modalPhoto');
+    modalPhoto.innerHTML = '<i class="bi bi-bank2"></i>';
+    const knownImage = university.imageUrl || imageCache.get(university.universityId);
+    if (knownImage) {
+        modalPhoto.appendChild(Object.assign(document.createElement('img'), {
+            src: knownImage, alt: university.name, onerror() { this.remove(); }
+        }));
+    } else {
+        loadCampusImage(university).then(url => {
+            if (url && selectedUniversity && selectedUniversity.universityId === universityId) {
+                modalPhoto.appendChild(Object.assign(document.createElement('img'), {
+                    src: url, alt: university.name, onerror() { this.remove(); }
+                }));
+            }
+        });
+    }
 
     const websiteBtn = document.getElementById('modalWebsiteBtn');
     websiteBtn.href = website || '#';
@@ -391,7 +619,8 @@ async function toggleFavorite(universityId) {
 
 function findUniversity(universityId) {
     return currentUniversities.find(u => u.universityId === universityId)
-        || favorites.find(u => u.universityId === universityId);
+        || favorites.find(u => u.universityId === universityId)
+        || topUniversities.find(u => u.universityId === universityId);
 }
 
 // --- Chat ---

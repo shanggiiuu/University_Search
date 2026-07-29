@@ -8,8 +8,11 @@ import tools.jackson.databind.ObjectMapper;
 
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 /**
  * Talks to The Movie Database (TMDB) so our app can search real movies.
  *
@@ -42,6 +45,21 @@ public class TmdbService {
      */
     private ObjectMapper objectMapper;
 
+    /**
+     * Separate client for Wikipedia's public summary API, used only to fetch a
+     * real campus photo for the curated Top Universities list. No API key
+     * needed — it's a free, unauthenticated endpoint.
+     */
+    private final WebClient wikipediaClient;
+
+    /**
+     * Client for Wikipedia/MediaWiki's action API ({@code /w/api.php}), used as a
+     * fallback when the summary API's thumbnail turns out to be a coat of
+     * arms/seal/logo rather than an actual campus photo (common for older
+     * universities, e.g. Harvard's summary thumbnail is its coat of arms).
+     */
+    private final WebClient wikipediaActionClient;
+
     /** Your personal TMDB key, read from {@code application.properties}. */
 
     /**
@@ -70,6 +88,13 @@ public class TmdbService {
                 .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(10 * 1024 * 1024))
                 .build();
 
+        this.wikipediaClient = WebClient.builder()
+                .baseUrl("https://en.wikipedia.org/api/rest_v1/page/summary")
+                .build();
+
+        this.wikipediaActionClient = WebClient.builder()
+                .baseUrl("https://en.wikipedia.org/w/api.php")
+                .build();
     }
 
     /**
@@ -148,6 +173,168 @@ public class TmdbService {
     public University searchOne(String title) {
         List<University> movies = searchUniversity(title);
         return movies.isEmpty() ? null : movies.get(0);
+    }
+
+    /**
+     * A curated list of globally well-regarded universities, used to seed the
+     * "Top Universities" spotlight on the home page and the default view of the
+     * Universities tab. Hipolabs has no ranking/popularity data, so we hand-pick
+     * real, well-known names here and resolve each one through {@link #searchOne}
+     * to get back a full, saveable {@link University}.
+     *
+     * <p>Each entry maps the exact name Hipolabs searches by to the Wikipedia
+     * article title used to fetch a campus photo — the two occasionally differ
+     * (e.g. Hipolabs lists ETH Zurich as {@code "ETHZ - ETH Zurich"}).
+     */
+    private static final Map<String, String> TOP_UNIVERSITY_NAMES = new LinkedHashMap<>();
+
+    static {
+        TOP_UNIVERSITY_NAMES.put("Massachusetts Institute of Technology", "Massachusetts Institute of Technology");
+        TOP_UNIVERSITY_NAMES.put("Harvard University", "Harvard University");
+        TOP_UNIVERSITY_NAMES.put("Stanford University", "Stanford University");
+        TOP_UNIVERSITY_NAMES.put("University of Oxford", "University of Oxford");
+        TOP_UNIVERSITY_NAMES.put("University of Cambridge", "University of Cambridge");
+        TOP_UNIVERSITY_NAMES.put("ETHZ - ETH Zurich", "ETH Zurich");
+        TOP_UNIVERSITY_NAMES.put("National University of Singapore", "National University of Singapore");
+        TOP_UNIVERSITY_NAMES.put("California Institute of Technology", "California Institute of Technology");
+        TOP_UNIVERSITY_NAMES.put("Imperial College London", "Imperial College London");
+        TOP_UNIVERSITY_NAMES.put("University of Tokyo", "University of Tokyo");
+        TOP_UNIVERSITY_NAMES.put("University of Toronto", "University of Toronto");
+        TOP_UNIVERSITY_NAMES.put("University of Melbourne", "University of Melbourne");
+    }
+
+    public List<University> getTopUniversities() {
+        List<University> top = new ArrayList<>();
+        Set<Integer> seenIds = new HashSet<>();
+        for (Map.Entry<String, String> entry : TOP_UNIVERSITY_NAMES.entrySet()) {
+            try {
+                University uni = searchOne(entry.getKey());
+                if (uni != null && seenIds.add(uni.getUniversityId())) {
+                    uni.setImageUrl(getCampusImage(entry.getValue()));
+                    top.add(uni);
+                }
+            } catch (Exception ignored) {
+                // one bad lookup shouldn't take down the whole list
+            }
+        }
+        return top;
+    }
+
+    /**
+     * Looks up a campus photo for any university by name, used by the
+     * {@code /api/university/image} endpoint so search results and the detail
+     * modal can show a real photo instead of just a flag/icon, without paying
+     * the cost of resolving every search result up front.
+     *
+     * <p>The summary API's thumbnail is usually a real photo, but for many
+     * older universities it's actually the coat of arms/seal (e.g. Harvard).
+     * When that happens we fall back to {@link #fetchCampusPhotoFromArticleImages}
+     * to find an actual building/campus photo elsewhere in the article.
+     */
+    public String getCampusImage(String universityName) {
+        String thumbnail = fetchWikipediaImage(universityName);
+        if (thumbnail != null && !looksLikeLogo(thumbnail)) {
+            return thumbnail;
+        }
+        return fetchCampusPhotoFromArticleImages(universityName);
+    }
+
+    /** Filenames/URLs containing any of these are a crest, seal or logo, not a photo. */
+    private static final List<String> LOGO_KEYWORDS = List.of(
+            "coat_of_arms", "coatofarms", "seal", "crest", "logo", "wordmark",
+            "emblem", "shield", "insignia", "monogram"
+    );
+
+    /** Words that suggest a filename actually depicts campus buildings/grounds. */
+    private static final List<String> CAMPUS_KEYWORDS = List.of(
+            "campus", "aerial", "building", "hall", "yard", "library", "tower",
+            "quad", "gate", "skyline", "view", "college", "university"
+    );
+
+    private boolean looksLikeLogo(String urlOrTitle) {
+        String lower = urlOrTitle.toLowerCase();
+        // Almost every crest/seal/flag on Wikipedia is stored as an SVG; real
+        // campus photography is essentially always a JPEG.
+        if (lower.contains(".svg")) return true;
+        return LOGO_KEYWORDS.stream().anyMatch(lower::contains);
+    }
+
+    /**
+     * Scans every image used in a Wikipedia article for one that looks like an
+     * actual campus/building photo, skipping crests, seals, flags and the many
+     * unrelated portrait photos (notable alumni, etc.) that show up on
+     * well-documented university pages. Returns {@code null} if nothing in the
+     * article clearly qualifies, in which case the frontend falls back to a
+     * flag/icon — a missing photo is never fatal.
+     */
+    private String fetchCampusPhotoFromArticleImages(String wikipediaTitle) {
+        try {
+            String response = wikipediaActionClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .queryParam("action", "query")
+                            .queryParam("generator", "images")
+                            .queryParam("titles", wikipediaTitle)
+                            .queryParam("gimlimit", "50")
+                            .queryParam("prop", "imageinfo")
+                            .queryParam("iiprop", "url")
+                            .queryParam("iiurlwidth", "800")
+                            .queryParam("format", "json")
+                            .build())
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+
+            JsonNode pages = objectMapper.readTree(response).path("query").path("pages");
+            for (JsonNode page : pages) {
+                String fileTitle = page.has("title") ? page.get("title").asString() : "";
+                if (looksLikeLogo(fileTitle) || !looksLikeCampusPhoto(fileTitle)) continue;
+
+                JsonNode imageInfo = page.path("imageinfo");
+                if (!imageInfo.isArray() || imageInfo.isEmpty()) continue;
+                JsonNode first = imageInfo.get(0);
+                String url = first.has("thumburl") ? first.get("thumburl").asString()
+                        : first.has("url") ? first.get("url").asString() : null;
+                if (url != null && !looksLikeLogo(url)) {
+                    return url;
+                }
+            }
+        } catch (Exception ignored) {
+            // no photo available — the frontend falls back to a placeholder
+        }
+        return null;
+    }
+
+    private boolean looksLikeCampusPhoto(String fileTitle) {
+        String lower = fileTitle.toLowerCase();
+        return CAMPUS_KEYWORDS.stream().anyMatch(lower::contains);
+    }
+
+    /**
+     * Looks up a university's campus photo via Wikipedia's public summary API,
+     * e.g. {@code /page/summary/Harvard_University}. Returns {@code null} if the
+     * article has no thumbnail or the request fails for any reason — the
+     * frontend falls back to a flag/icon in that case, so a missing photo is
+     * never fatal.
+     */
+    private String fetchWikipediaImage(String wikipediaTitle) {
+        try {
+            String response = wikipediaClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/{title}")
+                            .build(wikipediaTitle.replace(" ", "_")))
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+
+            JsonNode root = objectMapper.readTree(response);
+            JsonNode thumbnail = root.get("thumbnail");
+            if (thumbnail != null && thumbnail.has("source")) {
+                return thumbnail.get("source").asString();
+            }
+        } catch (Exception ignored) {
+            // no photo available — the frontend falls back to a placeholder
+        }
+        return null;
     }
 
     /**

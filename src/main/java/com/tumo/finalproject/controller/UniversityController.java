@@ -14,7 +14,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * HTTP endpoints for searching universities (via the Hipolabs University API,
@@ -38,6 +40,16 @@ public class UniversityController {
             return ResponseEntity.badRequest().build();
         }
         return ResponseEntity.ok(tmdbService.searchUniversity(query));
+    }
+
+    @GetMapping("/top")
+    public ResponseEntity<List<University>> getTopUniversities() {
+        return ResponseEntity.ok(tmdbService.getTopUniversities());
+    }
+
+    @GetMapping("/image")
+    public ResponseEntity<Map<String, String>> getCampusImage(@RequestParam String name) {
+        return ResponseEntity.ok(Collections.singletonMap("imageUrl", tmdbService.getCampusImage(name)));
     }
 
     @GetMapping("/favorites")

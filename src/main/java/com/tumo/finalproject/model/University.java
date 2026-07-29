@@ -63,7 +63,6 @@ import java.util.Objects;
  */
 public class University {
 
-    @JsonProperty("id")
     private int universityId;
     private String name;
     private String country;
@@ -78,6 +77,13 @@ public class University {
 
     @JsonProperty("web_pages")
     private List<String> webPages;
+
+    /**
+     * A real campus photo, when we have one (currently only the curated Top
+     * Universities list, fetched from Wikipedia). {@code null} otherwise, in
+     * which case the frontend falls back to a flag/icon placeholder.
+     */
+    private String imageUrl;
 
     public University() {
     }
@@ -147,6 +153,14 @@ public class University {
 
     public void setWebPages(List<String> webPages) {
         this.webPages = webPages;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 
     /**
